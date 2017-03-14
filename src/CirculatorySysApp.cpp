@@ -103,6 +103,10 @@ void CirculatorySysApp::setup()
         commands.push_back(s);
     };
     
+    mFAClientRef->onErrorCallback = [&](const std::string& error){
+        CI_LOG_E( "ssl error, " << error );
+    };
+    
     // ---- Debug ---
     
 //    _CameraDebug.lookAt( vec3( 2.0f, 3.0f, 1.0f ), vec3( 0 ) );

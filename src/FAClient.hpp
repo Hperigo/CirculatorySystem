@@ -53,48 +53,10 @@ namespace FlightAware{
         
 
         
-        FAClient(asio::io_service &io_service,
-                 asio::ssl::context& context,
-                 asio::ip::tcp::resolver::iterator endpoint_iterator, std::string init_command )
-        
-                :  mInitCommand(init_command){
-            
-                    mSocket = std::make_shared<asio::ssl::stream<asio::ip::tcp::socket>>(io_service, context);
-                    
-                    mSocket->set_verify_mode( asio::ssl::verify_peer);
-                    
-                    asio::async_connect(mSocket->lowest_layer(), endpoint_iterator,
-                                        std::bind(&FAClient::handleConnect, this, std::placeholders::_1));
-
-        }
-        
-        FAClient(const Settings& settings){
+        FAClient(const Settings& settings) : mSettings(settings){
             
             
-            auto mSslContext = asio::ssl::context(asio::ssl::context::sslv23);
-            mSslContext.set_default_verify_paths();
-            
-
-            
-            asio::ip::tcp::resolver resolver( settings.getIoService() );
-            asio::ip::tcp::resolver::query query(settings.getServer(), settings.getPort() );
-            
-            try{
-                mResolverIterator = resolver.resolve(query);
-            }
-            catch(std::exception& e ){
-                
-                std::cout << "could not find host: " << e.what() << std::endl;
-            }
-            
-            
-            
-            
-            mSocket = std::make_shared<asio::ssl::stream<asio::ip::tcp::socket>>(settings.getIoService(), mSslContext);
-
-            mSocket->set_verify_mode( asio::ssl::verify_peer);
-            
-            mInitCommand = settings.getInitCommand();
+ 
         }
         
         bool hasDataAvailable(){
@@ -111,8 +73,12 @@ namespace FlightAware{
         void disconnect();
         
         
-               // TODO: Make private
-    public:
+        //TODO: make getters
+        std::function<void(const std::string&)> onReplyCallback;
+        std::function<void(const std::string&)> onErrorCallback;
+        
+        
+    private:
         
         // Callbacks ------
         
@@ -132,9 +98,12 @@ namespace FlightAware{
         std::shared_ptr< asio::ssl::stream<asio::ip::tcp::socket>> mSocket;
     
         asio::ip::tcp::resolver::iterator mResolverIterator;
-//        asio::ssl::context mSslContext;
+        std::shared_ptr<asio::ip::tcp::resolver::query> mQuery;
         
-        std::string mInitCommand = "";
+        
+        Settings mSettings;
+        std::string mInitCommand;
+        
         
         std::string mReply;
         std::vector<std::string> mAvailableData;
@@ -143,7 +112,6 @@ namespace FlightAware{
         bool mKeepConnection = true;
         bool mHasDataAvailable = false;
         
-        std::function<void(const std::string&)> onReplyCallback;
         
     };
 }

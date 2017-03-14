@@ -34,6 +34,33 @@ namespace FlightAware {
     
     void FAClient::connect(){
         
+        auto mSslContext = asio::ssl::context(asio::ssl::context::sslv23);
+        mSslContext.set_default_verify_paths();
+        
+        
+        
+        asio::ip::tcp::resolver resolver( mSettings.getIoService() );
+        mQuery =  std::make_shared<asio::ip::tcp::resolver::query>(mSettings.getServer(), mSettings.getPort() );
+        
+        try{
+            mResolverIterator = resolver.resolve(*mQuery);
+        }
+        catch(std::exception& e ){
+            
+            if(onErrorCallback){
+                onErrorCallback( e.what() );
+            }
+            
+        }
+        
+        mInitCommand = mSettings.getInitCommand();
+        
+        
+        mSocket = std::make_shared<asio::ssl::stream<asio::ip::tcp::socket>>(mSettings.getIoService(), mSslContext);
+        
+        mSocket->set_verify_mode( asio::ssl::verify_peer);
+        
+        
 
         asio::async_connect(mSocket->lowest_layer(), mResolverIterator,
                             std::bind(&FAClient::handleConnect, this, std::placeholders::_1));
@@ -57,7 +84,9 @@ namespace FlightAware {
                                     std::bind(&FAClient::handleHandshake, this, std::placeholders::_1));
         }else{
             
-            std::cout << "Connection failed: " << error.message() << std::endl;
+            if(onErrorCallback){
+                onErrorCallback(error.message());
+            }
         }
     }
     
@@ -72,6 +101,10 @@ namespace FlightAware {
                                         std::placeholders::_2));
         }else{
             std::cout << "Handshake failed: " << error.message() << std::endl;
+            
+            if(onErrorCallback){
+                onErrorCallback(error.message());
+            }
         }
         
     }
@@ -80,10 +113,14 @@ namespace FlightAware {
 
         
         if(!error){
+            
             dispatchRead();
             
         }else{
-            std::cout << "write failed: " << error.message() << std::endl;
+            
+            if(onErrorCallback){
+                onErrorCallback(error.message());
+            }
         }
     }
     
@@ -103,7 +140,10 @@ namespace FlightAware {
                 mHasDataAvailable = true;
 
         }else{
-            std::cout << "read failed: " << error.message() << std::endl;
+            
+            if(onErrorCallback){
+                onErrorCallback(error.message());
+            }
         }
     
     }
