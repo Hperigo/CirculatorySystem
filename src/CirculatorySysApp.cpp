@@ -14,6 +14,10 @@
 // mine
 #include "FAClient.hpp"
 #include "Plane.hpp"
+#include "Database.hpp"
+
+// mongodb
+
 using namespace ci;
 using namespace ci::app;
 using namespace std;
@@ -24,8 +28,12 @@ class CirculatorySysApp : public App {
 	void setup() override;
 	void mouseDown( MouseEvent event ) override;
     void mouseMove( MouseEvent event ) override;
-	void update() override;
-	void draw() override;
+	
+    void draw() override;
+    
+    void update() override;
+    void updateFromQuery();
+    void updateFromDB();
     
     
     vec2 latLongToXY( vec2 point );
@@ -50,11 +58,17 @@ class CirculatorySysApp : public App {
     
 //    std::set<csys::Plane> mPlanes;
     std::map<std::string , csys::Plane> mPlanes;
+    std::map<std::string , csys::Plane> mDeletedPlanes;
 
     
     vec2 mMousePos;
     
     std::time_t globalTime;
+    
+    csys::Database mDatabase;
+    
+    
+    bool doQuery = false;
 };
 
 
@@ -77,6 +91,9 @@ vec2 CirculatorySysApp::latLongToXY(vec2 point){
 void CirculatorySysApp::setup()
 {
     
+
+    
+    mDatabase.setup();
     
     
     auto keyBuffer = loadAsset( "initcommand.cskey" )->getBuffer();
@@ -91,21 +108,27 @@ void CirculatorySysApp::setup()
     getWindow()->setSize(m2DMap->getSize());
     
     
-    auto settings = FlightAware::FAClient::Settings(App::io_service());
-    settings.setInitCommand(keyString);
-    
-    
-    
-    mFAClientRef = std::make_shared<FlightAware::FAClient>( settings);
-    mFAClientRef->connect();
+    if( doQuery ){
+        
+        
+        
+        auto settings = FlightAware::FAClient::Settings(App::io_service());
+        settings.setInitCommand(keyString);
+        
+        
+        
+        mFAClientRef = std::make_shared<FlightAware::FAClient>( settings);
+        mFAClientRef->connect();
 
-    mFAClientRef->onReplyCallback = [&](const std::string& s){
-        commands.push_back(s);
-    };
-    
-    mFAClientRef->onErrorCallback = [&](const std::string& error){
-        CI_LOG_E( "ssl error, " << error );
-    };
+        mFAClientRef->setReplyCallback( [&](const std::string& s){
+            commands.push_back(s);
+        });
+        
+        mFAClientRef->setErrorCallback( [&](const std::string& error){
+            CI_LOG_E( "ssl error, " << error );
+        });
+        
+    }
     
     // ---- Debug ---
     
@@ -119,29 +142,34 @@ void CirculatorySysApp::setup()
 //    getWindow()->getSignalResize().connect([&]{
 //        
 //    });
-
-
+    
 }
 
 void CirculatorySysApp::mouseDown( MouseEvent event )
 {
  
-    std::time_t now = std::time(nullptr);
     
-    console() << now - globalTime << std::endl;
-    globalTime = now;
 }
 
 void CirculatorySysApp::mouseMove( MouseEvent event )
 {
     mMousePos = event.getPos();
+    
+
+    
 }
 
-void CirculatorySysApp::update()
-{
+void CirculatorySysApp::updateFromDB(){
     
-    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mPlanes.size() ) );
+    
+    
+    
+    
+}
 
+
+void CirculatorySysApp::updateFromQuery(){
+    
     for(auto& s : commands){
         
         auto j = JsonTree(s);
@@ -154,44 +182,91 @@ void CirculatorySysApp::update()
             p.y = atof( j["lon"].getValue<std::string>().c_str() ) ;
             
             
-            if( !j.hasChild("reg") ){
+            if( !j.hasChild("id") ){
                 continue;
             }
             
             
             auto screenPos = latLongToXY( p );
-            auto key = j["reg"].getValue<std::string>();
             
+            auto key = j["id"].getValue<std::string>();
             auto found = mPlanes.find( key );
             
             
-            if( found !=  mPlanes.end() ){
-                found->second.setPosition(screenPos);
-            }else{
-                mPlanes[key] = csys::Plane(key, screenPos);
-            }
             
-
-        
+            
+            
+            if( found !=  mPlanes.end() ){
+                //                found->second.appendPosition(screenPos);
+                mDatabase.insertPlane( found->second );
+                
+            }else{
+                
+                auto delPlane = mDeletedPlanes.find(key);
+                if(delPlane != mDeletedPlanes.end()){
+                    
+                    //                    delPlane->second.appendPosition(screenPos);
+                    //                    mPlanes[key] = delPlane->second;
+                    //                    mDeletedPlanes.erase(delPlane);
+                    
+                }else{
+                    
+                    // create new plane
+                    csys::Plane p( key, screenPos, std::make_shared<JsonTree>(j) );
+                    //                    mPlanes[key] = p;
+                    
+                    mDatabase.insertPlane(p);
+                    
+                    
+                }
+                
+            }
         }
     }
     
     commands.clear();
     
-    
+    int maxTimeDiff = 0;
+    int numberOfMax = 0;
     
     for(auto p = mPlanes.begin(); p != mPlanes.end();){
         auto plane = p->second;
         
-        int timeDiff = plane.getLastUpdateTime() - globalTime;
-        if(timeDiff > 1500){ //
-            console() << "Erasing plane " << plane.getKey()  <<  std::endl;;
-            p = mPlanes.erase(p);
-        }else{
-          
+        int timeDiff = globalTime - plane.getLastUpdateTime();
+        
+        if(timeDiff > maxTimeDiff){
+            maxTimeDiff = timeDiff;
+            numberOfMax++;
         }
-          ++p;
+        
+        if(timeDiff > 3000){ //
+            console() << "Erasing plane " << plane.getKey() << " ||| time diff: " << timeDiff <<  std::endl;
+            //            mDeletedPlanes.insert( std::make_pair( plane.getKey(), plane) );
+            //            mPlanes.erase(p++);
+        }else{
+            ++p;
+        }
+        
     }
+    
+    console() << "Max time diff: " << maxTimeDiff << std::endl;
+    console() << "Max time diff: " << numberOfMax << std::endl;
+
+    
+}
+
+void CirculatorySysApp::update()
+{
+    
+    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mPlanes.size() ) );
+    
+    globalTime = std::time(nullptr);
+
+
+    if(getElapsedFrames() % 10 != 0){
+     return;
+    }
+    
     
 }
 
@@ -216,19 +291,15 @@ void CirculatorySysApp::draw()
     }
 
     
-    gl::color( ColorA(1.0f, 1.0f, 1.0f, 0.1f) ) ;
+    gl::color( ColorA(1.0f, 1.0f, 1.0f, 0.7f) ) ;
     
-    int neededRedraw = 0;
+//    int neededRedraw = 0;
     for(auto& p :mPlanes){
         
         auto& plane = p.second;
         
-        if(plane.draw()){
-            neededRedraw++;
-        }
+        plane.draw();
     }
-    
-   // console() << neededRedraw << " planes needed redraw and " << mPlanes.size() - neededRedraw << " did not" << std::endl;
 }
 
 CINDER_APP( CirculatorySysApp, RendererGl( RendererGl::Options().msaa(4) ) )

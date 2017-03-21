@@ -13,21 +13,20 @@ namespace csys {
     
     using namespace cinder;
 
-    void Plane::setPosition(const ci::vec2 &pos){
+    void Plane::appendPosition(const ci::vec2 &pos){
         
         
         float distance = glm::distance(lastPosition, pos);
         
         
-        if(distance > 1 && distance < 50){
+        if(distance > 5){
             needsRedraw = true;
         }else{
             needsRedraw = false;
         }
         
-        position = pos;
         lastUpdateTime = std::time(nullptr);
-
+        position = pos;
     }
     
     bool Plane::draw(){
@@ -44,6 +43,7 @@ namespace csys {
         }
         
         lastPosition = position;
+        positions.push_back(position);
         needsRedraw = false;
         
         return true;

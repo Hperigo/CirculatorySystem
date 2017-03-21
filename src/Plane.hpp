@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include "cinder/Vector.h"
-
+#include "cinder/Json.h"
 
 namespace csys {
     
@@ -22,11 +22,11 @@ namespace csys {
             
         }
         
-        Plane(const std::string& key, const ci::vec2& pos) : mKey(key), position(pos), lastPosition(pos){
+        Plane(const std::string& key, const ci::vec2& pos, const std::shared_ptr< ci::JsonTree >& info) : mKey(key), position(pos), lastPosition(pos), mJsonInfo(info){
             lastUpdateTime = std::time(nullptr);
         }
         
-        void setPosition(const ci::vec2& pos);
+        void appendPosition(const ci::vec2& pos);
         
         ci::vec2 getPosition() const{
             return position;
@@ -41,22 +41,35 @@ namespace csys {
             return mKey;
         }
         
-    
-        
-        bool draw();
-        
         std::time_t getLastUpdateTime() const{
             return lastUpdateTime;
         };
-
+        
+        std::vector<ci::vec2> getPositions() const{
+            return positions;
+        }
+        
+        
+        std::shared_ptr< ci::JsonTree > getInfo()const {
+            return mJsonInfo;
+        }
+        
+        bool draw();
+        
+        
     protected:
         bool needsRedraw = false;
         
         ci::vec2 position;
         ci::vec2 lastPosition;
-        std::string mKey;
         
+        // infos
         std::time_t lastUpdateTime;
+        std::string mKey;
+        std::shared_ptr< ci::JsonTree > mJsonInfo;
+        
+        std::vector<ci::vec2> positions;
+
     };
     
 }// end of namespace csys

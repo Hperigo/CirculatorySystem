@@ -72,10 +72,8 @@ namespace FlightAware{
         void connect();
         void disconnect();
         
-        
-        //TODO: make getters
-        std::function<void(const std::string&)> onReplyCallback;
-        std::function<void(const std::string&)> onErrorCallback;
+        void setReplyCallback(const std::function<void(const std::string&)>& fn) { onReplyCallback = fn; }
+        void setErrorCallback(const std::function<void(const std::string&)>& fn) { onErrorCallback = fn; }
         
         
     private:
@@ -111,7 +109,9 @@ namespace FlightAware{
 
         bool mKeepConnection = true;
         bool mHasDataAvailable = false;
-        
+
+        std::function<void(const std::string&)> onReplyCallback;
+        std::function<void(const std::string&)> onErrorCallback;
         
     };
 }
