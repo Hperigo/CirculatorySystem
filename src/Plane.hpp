@@ -26,6 +26,28 @@ namespace csys {
             lastUpdateTime = std::time(nullptr);
         }
         
+        Plane(const std::string& key, const std::shared_ptr< ci::JsonTree >& info) : mKey(key), mJsonInfo(info){
+            
+            
+            auto positionArray = (*mJsonInfo)["positions"];
+            
+            for(auto& child : positionArray.getChildren()){
+            
+//                std::cout << "x: " << child["lat"].getValue<float>() << "\n";
+//                std::cout << "y: " << child["long"].getValue<float>()<< "\n";
+                
+                
+                float x = child["lat"].getValue<float>();
+                float y = child["long"].getValue<float>();
+                
+                positions.push_back({x, y});
+                
+            }
+            
+            
+        }
+        
+        
         void appendPosition(const ci::vec2& pos);
         
         ci::vec2 getPosition() const{

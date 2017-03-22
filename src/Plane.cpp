@@ -7,7 +7,7 @@
 //
 
 #include "Plane.hpp"
-
+#include "GeoUtils.h"
 
 namespace csys {
     
@@ -15,18 +15,10 @@ namespace csys {
 
     void Plane::appendPosition(const ci::vec2 &pos){
         
-        
-        float distance = glm::distance(lastPosition, pos);
-        
-        
-        if(distance > 5){
-            needsRedraw = true;
-        }else{
-            needsRedraw = false;
-        }
-        
         lastUpdateTime = std::time(nullptr);
+        needsRedraw = true;
         position = pos;
+        
     }
     
     bool Plane::draw(){
@@ -39,7 +31,12 @@ namespace csys {
         vec2 lastPos = getLastPosition();
         
         if(lastPos != vec2(0)){
-            gl::drawLine(pos, lastPos);
+            
+            auto pointA = csys::geo::latLongToCartesian( { 1200, 600} , pos);
+            auto pointB = csys::geo::latLongToCartesian( { 1200, 600} ,lastPos);
+            
+            if( glm::distance( pointA, pointB) < 500 )
+                gl::drawLine(pointA, pointB);
         }
         
         lastPosition = position;

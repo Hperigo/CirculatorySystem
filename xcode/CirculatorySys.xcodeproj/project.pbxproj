@@ -91,6 +91,7 @@
 		BE795C201E74A25F00B4E69C /* Plane.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Plane.hpp; path = ../src/Plane.hpp; sourceTree = "<group>"; };
 		BE795C221E74A27700B4E69C /* FAClient.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FAClient.cpp; path = ../src/FAClient.cpp; sourceTree = "<group>"; };
 		BE795C231E74A27700B4E69C /* FAClient.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FAClient.hpp; path = ../src/FAClient.hpp; sourceTree = "<group>"; };
+		BEC8F4FC1E81EB1D00A3B92E /* GeoUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeoUtils.h; path = ../src/GeoUtils.h; sourceTree = "<group>"; };
 		BED7F7651E7A07BE00F14AE0 /* libbsoncxx.3.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbsoncxx.3.1.1.dylib; path = "/usr/local/Cellar/mongo-cxx-driver/3.1.1/lib/libbsoncxx.3.1.1.dylib"; sourceTree = "<absolute>"; };
 		BED7F7661E7A07BE00F14AE0 /* libmongocxx.3.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmongocxx.3.1.1.dylib; path = "/usr/local/Cellar/mongo-cxx-driver/3.1.1/lib/libmongocxx.3.1.1.dylib"; sourceTree = "<absolute>"; };
 		C310D654E4414C52B7EB765A /* SyphonNameboundClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SyphonNameboundClient.h; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-Syphon/lib/SyphonNameboundClient.h"; sourceTree = "<group>"; };
@@ -137,13 +138,14 @@
 		080E96DDFE201D6D7F000001 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				67FBD51CADD140E3A336F7DD /* CirculatorySysApp.cpp */,
 				BE795C221E74A27700B4E69C /* FAClient.cpp */,
 				BE795C231E74A27700B4E69C /* FAClient.hpp */,
-				67FBD51CADD140E3A336F7DD /* CirculatorySysApp.cpp */,
 				BE795C201E74A25F00B4E69C /* Plane.hpp */,
 				BE795C1F1E74A25F00B4E69C /* Plane.cpp */,
 				BE2E0EA71E78918C00F8A479 /* Database.cpp */,
 				BE2E0EA81E78918C00F8A479 /* Database.hpp */,
+				BEC8F4FC1E81EB1D00A3B92E /* GeoUtils.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -315,8 +317,8 @@
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "CirculatorySys" */;
 			buildPhases = (
 				8D1107290486CEB800E47090 /* Resources */,
-				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
+				8D11072C0486CEB800E47090 /* Sources */,
 				25DCC473FF0B4237AA38C472 /* CopyFiles */,
 			);
 			buildRules = (

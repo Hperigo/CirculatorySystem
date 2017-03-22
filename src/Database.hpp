@@ -35,13 +35,18 @@ namespace csys {
     public:
         void setup();
         
-        void insertPlane(const csys::Plane& plane);
-        void getPlane();
-       
-        void getPlanes();
         
+        bool appendData(const  ci::JsonTree& jsonData);
+        std::shared_ptr<csys::Plane> getPlane(const std::string& string_key);
+        
+        
+        std::map<std::string, csys::Plane>& getPlanes() { return mPlanes; };
         
     private:
+        
+        
+        void insertPlaneToDB(const csys::Plane& plane);
+        std::shared_ptr<csys::Plane>  getPlaneFromDB(const csys::Plane& plane);
         
         document planeToBson(const csys::Plane& plane);
         
@@ -49,6 +54,10 @@ namespace csys {
         mongocxx::database mDB;
         mongocxx::collection mCollection;
         mongocxx::client mMongoClient;
+        
+        
+        // Software cache ----
+        std::map<std::string, csys::Plane> mPlanes;
         
     };
     

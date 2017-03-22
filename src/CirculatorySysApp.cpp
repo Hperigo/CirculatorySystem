@@ -2,6 +2,9 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 
+
+#include "CinderImGui.h"
+
 // 3D
 #include "cinder/CameraUi.h"
 #include "cinder/Log.h"
@@ -9,12 +12,15 @@
 // Cinder
 #include "cinder/Json.h"
 #include "cinder/Timer.h"
-
+#include "cinder/params/Params.h"
 
 // mine
+#include "GeoUtils.h"
+
 #include "FAClient.hpp"
 #include "Plane.hpp"
 #include "Database.hpp"
+
 
 // mongodb
 
@@ -34,9 +40,7 @@ class CirculatorySysApp : public App {
     void update() override;
     void updateFromQuery();
     void updateFromDB();
-    
-    
-    vec2 latLongToXY( vec2 point );
+
     
     CameraPersp			_CameraDebug;
     CameraUi			_CamUi;
@@ -67,31 +71,25 @@ class CirculatorySysApp : public App {
     
     csys::Database mDatabase;
     
+    std::shared_ptr<csys::Plane> activePlane;
     
-    bool doQuery = false;
+    
+    bool doQuery = true;
+    
+    params::InterfaceGlRef mParams;
+    
+    bool whatPoint = false;
+    vec2 pointA;
+    vec2 pointB;
 };
 
 
-vec2 CirculatorySysApp::latLongToXY(vec2 point){
-    
-    float width = m2DMap->getWidth();
-    float height = m2DMap->getHeight();
-    
-    float lon = point.y;
-    float lat = point.x;
-    
-    
-    auto x = ((lon + 180) * (width  / 360));
-    auto y = (((lat * -1) + 90) * (height/ 180));
-    
-    return vec2(x,y);
-}
 
 
 void CirculatorySysApp::setup()
 {
     
-
+    ui::initialize();
     
     mDatabase.setup();
     
@@ -107,6 +105,8 @@ void CirculatorySysApp::setup()
     m2DMap  = gl::Texture::create(loadImage( loadAsset( "map.png")  ) );
     getWindow()->setSize(m2DMap->getSize());
     
+    
+    console() << "size: "  << getWindow()->getSize() << std::endl;
     
     if( doQuery ){
         
@@ -142,12 +142,20 @@ void CirculatorySysApp::setup()
 //    getWindow()->getSignalResize().connect([&]{
 //        
 //    });
-    
+//    mParams = params::InterfaceGl::create("db", { 240, 300} );
 }
 
 void CirculatorySysApp::mouseDown( MouseEvent event )
 {
  
+    if(whatPoint){
+        pointA = event.getPos();
+    }
+    else{
+        pointB = event.getPos();
+    }
+    
+    whatPoint = !whatPoint;
     
 }
 
@@ -187,78 +195,18 @@ void CirculatorySysApp::updateFromQuery(){
             }
             
             
-            auto screenPos = latLongToXY( p );
+            mDatabase.appendData( j );
             
-            auto key = j["id"].getValue<std::string>();
-            auto found = mPlanes.find( key );
-            
-            
-            
-            
-            
-            if( found !=  mPlanes.end() ){
-                //                found->second.appendPosition(screenPos);
-                mDatabase.insertPlane( found->second );
-                
-            }else{
-                
-                auto delPlane = mDeletedPlanes.find(key);
-                if(delPlane != mDeletedPlanes.end()){
-                    
-                    //                    delPlane->second.appendPosition(screenPos);
-                    //                    mPlanes[key] = delPlane->second;
-                    //                    mDeletedPlanes.erase(delPlane);
-                    
-                }else{
-                    
-                    // create new plane
-                    csys::Plane p( key, screenPos, std::make_shared<JsonTree>(j) );
-                    //                    mPlanes[key] = p;
-                    
-                    mDatabase.insertPlane(p);
-                    
-                    
-                }
-                
-            }
         }
     }
     
     commands.clear();
-    
-    int maxTimeDiff = 0;
-    int numberOfMax = 0;
-    
-    for(auto p = mPlanes.begin(); p != mPlanes.end();){
-        auto plane = p->second;
-        
-        int timeDiff = globalTime - plane.getLastUpdateTime();
-        
-        if(timeDiff > maxTimeDiff){
-            maxTimeDiff = timeDiff;
-            numberOfMax++;
-        }
-        
-        if(timeDiff > 3000){ //
-            console() << "Erasing plane " << plane.getKey() << " ||| time diff: " << timeDiff <<  std::endl;
-            //            mDeletedPlanes.insert( std::make_pair( plane.getKey(), plane) );
-            //            mPlanes.erase(p++);
-        }else{
-            ++p;
-        }
-        
-    }
-    
-    console() << "Max time diff: " << maxTimeDiff << std::endl;
-    console() << "Max time diff: " << numberOfMax << std::endl;
-
-    
 }
 
 void CirculatorySysApp::update()
 {
     
-    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mPlanes.size() ) );
+    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mDatabase.getPlanes().size() ) );
     
     globalTime = std::time(nullptr);
 
@@ -266,40 +214,102 @@ void CirculatorySysApp::update()
     if(getElapsedFrames() % 10 != 0){
      return;
     }
+
+
+    
+    if(doQuery){
+        updateFromQuery();
+    }
+    
+
     
     
 }
 
 void CirculatorySysApp::draw()
 {
-
-    if( once  < 10){
+    
+    if(getElapsedFrames() < 10){
         
-        gl::clearColor( ColorA(0,0,0,1));
-        gl::clear();
+
+        gl::clear(  ColorA(0,0,0,1) );
  
         gl::color( ColorA(0.4, 0.1,0.1, 1.0) );
         gl::draw(m2DMap);
+    
+        gl::color( ColorA(1.0f, 1.0f, 1.0f, 0.7f) ) ;
         
-        once++;
-    
     }
     
-    if( getElapsedFrames() % 10800 == 0){
-        gl::color( ColorA(0.4, 0.1,0.1, 0.01) );
-        gl::draw(m2DMap);
+    {
+//        ui::ScopedWindow w("Flight Query");
+//        
+//        std::string buff = activePlane->getKey();
+//        ui::InputText("ID", &buff);
+//        
+//        ui::Text("id" );
+        
     }
-
     
-    gl::color( ColorA(1.0f, 1.0f, 1.0f, 0.7f) ) ;
     
 //    int neededRedraw = 0;
-    for(auto& p :mPlanes){
+    for(auto& p : mDatabase.getPlanes() ){
         
         auto& plane = p.second;
         
         plane.draw();
     }
+
+    
+    //-23.533773
+    //Longitude	-46.625290
+    
+
+//    auto pos = csys::geo::latLongToCartesian(m2DMap->getSize(), {0,0} );
+//    gl::drawSolidCircle(pos, 5);
+//    
+//    pos = csys::geo::latLongToCartesian(m2DMap->getSize(), {-23.533773, -46.625290} );
+//    gl::drawSolidCircle(pos, 5);
+//    
+//    
+////    Latitude	51.509865
+////    Longitude	-0.118092
+//    pos = csys::geo::latLongToCartesian(m2DMap->getSize(), {51.509865, -0.118092} );
+//    gl::drawSolidCircle(pos, 5);
+//    
+//    
+//    auto latLong = csys::geo::cartesianToLatLong(m2DMap->getSize(), mMousePos);
+//    console() << latLong << endl;
+//
+//    
+//    pos = csys::geo::latLongToCartesian(m2DMap->getSize(), latLong );
+//    gl::drawSolidCircle(pos, 8);
+    
+//    auto positions = activePlane->getPositions();
+//    
+//    for (int i = 1; i < positions.size(); i++) {
+//        
+//        
+//        auto a = positions[i];
+//        auto b = positions[i-1];
+//        
+//        gl::drawLine(a, b);
+//        
+//    }
+//    
+    
+    
+//    auto coord = csys::geo::cartesianToLatLong(m2DMap->getSize(), mMousePos);
+//    coord =  csys::geo::latLongToCartesian(m2DMap->getSize(),  coord);
+//    
+//    
+//    gl::color( 0.0f, 0.0f, 1.0f );
+//    gl::drawSolidCircle( pointA, 20);
+//    
+//    gl::color(1.0f, 1.0f, 0.0f  );
+//    gl::drawSolidCircle( pointB, 10);
+//    
+//    console() << csys::geo::distanceLatLong( csys::geo::cartesianToLatLong(m2DMap->getSize(), pointA) , csys::geo::cartesianToLatLong(m2DMap->getSize(), pointB)) <<std::endl;
 }
 
 CINDER_APP( CirculatorySysApp, RendererGl( RendererGl::Options().msaa(4) ) )
