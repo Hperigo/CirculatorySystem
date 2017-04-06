@@ -13,8 +13,14 @@
 #include "cinder/Vector.h"
 #include "cinder/Json.h"
 
+#include <bsoncxx/json.hpp>
+#include <bsoncxx/builder/stream/array.hpp>
+
+
 namespace csys {
     
+    
+    typedef std::shared_ptr<class Plane> PlaneRef;
     
     class Plane{
     public:
@@ -22,28 +28,27 @@ namespace csys {
             
         }
         
-        Plane(const std::string& key, const ci::vec2& pos, const std::shared_ptr< ci::JsonTree >& info) : mKey(key), position(pos), lastPosition(pos), mJsonInfo(info){
+        Plane(const std::string& key, const ci::vec2& pos, const std::shared_ptr< ci::JsonTree >& info) : mKey(key), position(pos), lastPosition(pos){
             lastUpdateTime = std::time(nullptr);
+            creationTime = std::time(nullptr);
         }
         
-        Plane(const std::string& key, const std::shared_ptr< ci::JsonTree >& info) : mKey(key), mJsonInfo(info){
+        Plane(const std::string& key, const bsoncxx::document::view& doc) : mKey(key){
             
             
-            auto positionArray = (*mJsonInfo)["positions"];
+            creationTime = doc["creationTime"].get_int64();
+            lastUpdateTime = doc["lastUpdateTime"].get_int64();
             
-            for(auto& child : positionArray.getChildren()){
+            auto positionsArray = doc["positions"].get_array().value;
             
-//                std::cout << "x: " << child["lat"].getValue<float>() << "\n";
-//                std::cout << "y: " << child["long"].getValue<float>()<< "\n";
+            for(auto& child : positionsArray){
                 
+                float x = child.get_document().view()["lat"].get_double();
+                float y = child.get_document().view()["long"].get_double();
                 
-                float x = child["lat"].getValue<float>();
-                float y = child["long"].getValue<float>();
-                
+
                 positions.push_back({x, y});
-                
             }
-            
             
         }
         
@@ -63,17 +68,16 @@ namespace csys {
             return mKey;
         }
         
+        std::time_t getCreationTime() const{
+            return creationTime;
+        };
+        
         std::time_t getLastUpdateTime() const{
             return lastUpdateTime;
         };
         
         std::vector<ci::vec2> getPositions() const{
             return positions;
-        }
-        
-        
-        std::shared_ptr< ci::JsonTree > getInfo()const {
-            return mJsonInfo;
         }
         
         bool draw();
@@ -87,9 +91,9 @@ namespace csys {
         
         // infos
         std::time_t lastUpdateTime;
-        std::string mKey;
-        std::shared_ptr< ci::JsonTree > mJsonInfo;
+        std::time_t creationTime;
         
+        std::string mKey;
         std::vector<ci::vec2> positions;
 
     };

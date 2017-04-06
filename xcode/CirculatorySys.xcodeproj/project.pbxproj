@@ -33,6 +33,7 @@
 		BE795C241E74A27700B4E69C /* FAClient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE795C221E74A27700B4E69C /* FAClient.cpp */; };
 		BED7F7671E7A07BE00F14AE0 /* libbsoncxx.3.1.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BED7F7651E7A07BE00F14AE0 /* libbsoncxx.3.1.1.dylib */; };
 		BED7F7681E7A07BE00F14AE0 /* libmongocxx.3.1.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BED7F7661E7A07BE00F14AE0 /* libmongocxx.3.1.1.dylib */; };
+		BEE7DD081E9667E000AC9577 /* PlaneManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BEE7DD061E9667E000AC9577 /* PlaneManager.cpp */; };
 		EA50AB948E4E4A3F93B8FBC5 /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = BCFB511C779C4995B173214E /* CinderApp.icns */; };
 		FFB731265CC64A60BFB21B15 /* imgui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F2DBF04B9EA442D3B7FC08B2 /* imgui.cpp */; };
 /* End PBXBuildFile section */
@@ -94,6 +95,8 @@
 		BEC8F4FC1E81EB1D00A3B92E /* GeoUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeoUtils.h; path = ../src/GeoUtils.h; sourceTree = "<group>"; };
 		BED7F7651E7A07BE00F14AE0 /* libbsoncxx.3.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbsoncxx.3.1.1.dylib; path = "/usr/local/Cellar/mongo-cxx-driver/3.1.1/lib/libbsoncxx.3.1.1.dylib"; sourceTree = "<absolute>"; };
 		BED7F7661E7A07BE00F14AE0 /* libmongocxx.3.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmongocxx.3.1.1.dylib; path = "/usr/local/Cellar/mongo-cxx-driver/3.1.1/lib/libmongocxx.3.1.1.dylib"; sourceTree = "<absolute>"; };
+		BEE7DD061E9667E000AC9577 /* PlaneManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PlaneManager.cpp; path = ../src/PlaneManager.cpp; sourceTree = "<group>"; };
+		BEE7DD071E9667E000AC9577 /* PlaneManager.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = PlaneManager.hpp; path = ../src/PlaneManager.hpp; sourceTree = "<group>"; };
 		C310D654E4414C52B7EB765A /* SyphonNameboundClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SyphonNameboundClient.h; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-Syphon/lib/SyphonNameboundClient.h"; sourceTree = "<group>"; };
 		D39F5470A70247079C18BF8A /* ServerDirectory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ServerDirectory.h; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-Syphon/src/ServerDirectory.h"; sourceTree = "<group>"; };
 		D6BEE75BD63249168E618A8A /* imgui_user.inl */ = {isa = PBXFileReference; lastKnownFileType = "\"\""; name = imgui_user.inl; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-ImGui/include/imgui_user.inl"; sourceTree = "<group>"; };
@@ -146,6 +149,8 @@
 				BE2E0EA71E78918C00F8A479 /* Database.cpp */,
 				BE2E0EA81E78918C00F8A479 /* Database.hpp */,
 				BEC8F4FC1E81EB1D00A3B92E /* GeoUtils.h */,
+				BEE7DD061E9667E000AC9577 /* PlaneManager.cpp */,
+				BEE7DD071E9667E000AC9577 /* PlaneManager.hpp */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -383,6 +388,7 @@
 				BE795C241E74A27700B4E69C /* FAClient.cpp in Sources */,
 				A9274CEA042F43C9858D247C /* Server.mm in Sources */,
 				B9A7BE348ED84F86A1DA0009 /* ServerDirectory.mm in Sources */,
+				BEE7DD081E9667E000AC9577 /* PlaneManager.cpp in Sources */,
 				BE2E0EA91E78918C00F8A479 /* Database.cpp in Sources */,
 				5DDD361E6A814295860B1C48 /* SyphonNameboundClient.m in Sources */,
 			);

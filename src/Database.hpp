@@ -10,6 +10,8 @@
 #define Database_hpp
 
 #include <stdio.h>
+#include <thread>
+#include <functional>
 #include "Plane.hpp"
 
 // MongoDB
@@ -31,24 +33,47 @@ namespace csys {
     using bsoncxx::builder::stream::open_document;
     
     class Database{
+        public:
+        typedef std::vector< PlaneRef > DocContainer;
+
+        struct QueryResult{
+            
+            std::function<void( DocContainer& cur )> fnFucntion;
+            std::future<  DocContainer > future;
+            std::shared_ptr< DocContainer > cursor;
+            bool isDirty = false;
+            
+        };
         
-    public:
+        typedef std::shared_ptr<QueryResult> QueryResultRef;
+
+        
+    
         void setup();
         
         
         bool appendData(const  ci::JsonTree& jsonData);
-        std::shared_ptr<csys::Plane> getPlane(const std::string& string_key);
+        void queryEveryPlane();
         
+        void queryEveryPlaneAsync();
+        bool isQueryAvailable();
+
+        csys::PlaneRef getPlane(const std::string& string_key);
+        std::map<std::string, csys::PlaneRef>& getPlanes() { return mPlanes; };
         
-        std::map<std::string, csys::Plane>& getPlanes() { return mPlanes; };
+        void update();
+        void addQuery(const bsoncxx::document::value& doc, std::function<void( DocContainer& cur )> fn);
+//        void addQuery(const document& doc, const document::options& opt, const std::function<void( const document& doc)>& fn);
+
         
     private:
         
         
-        void insertPlaneToDB(const csys::Plane& plane);
-        std::shared_ptr<csys::Plane>  getPlaneFromDB(const csys::Plane& plane);
+        void insertPlaneToDB(const csys::PlaneRef& plane);
         
-        document planeToBson(const csys::Plane& plane);
+        csys::PlaneRef  getPlaneFromDB(const csys::Plane& plane);
+        
+        document planeToBson(const csys::PlaneRef& plane);
         
         mongocxx::instance mMongoInstance{};
         mongocxx::database mDB;
@@ -57,7 +82,14 @@ namespace csys {
         
         
         // Software cache ----
-        std::map<std::string, csys::Plane> mPlanes;
+        std::map<std::string, csys::PlaneRef> mPlanes;
+        
+        
+        // threading ----
+    
+        bool isMainQueryDone = false;
+        std::mutex mQueryMutex;
+        std::vector<QueryResultRef> mQueries;
         
     };
     

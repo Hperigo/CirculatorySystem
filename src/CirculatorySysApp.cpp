@@ -22,16 +22,36 @@
 #include "Database.hpp"
 
 
-// mongodb
-
 using namespace ci;
 using namespace ci::app;
 using namespace std;
 
 
+template<typename T>
+T vectorLerp( const std::vector<T>& values, float t)
+{
+    
+    
+    int lowerIndex = std::floor(t);
+    int upperIndex = std::ceil(t);
+
+    float f;
+    float scaledTime = modf(t, &f);
+
+    T value = ci::lerp<T>(values[lowerIndex], values[upperIndex], scaledTime);
+    
+    return value;
+}
+
+
 class CirculatorySysApp : public App {
   public:
+
+    CirculatorySysApp();
+    void prepareSetup(app::App::Settings* settings );
 	void setup() override;
+    
+    
 	void mouseDown( MouseEvent event ) override;
     void mouseMove( MouseEvent event ) override;
 	
@@ -60,21 +80,28 @@ class CirculatorySysApp : public App {
     std::vector<vec2> points;
     std::vector<string> commands;
     
+    void setPlanes();
+    
 //    std::set<csys::Plane> mPlanes;
-    std::map<std::string , csys::Plane> mPlanes;
-    std::map<std::string , csys::Plane> mDeletedPlanes;
+    std::map<std::string , csys::PlaneRef>* mPlanes = nullptr;
+    std::vector<csys::PlaneRef> mSortedPlanes;
 
     
     vec2 mMousePos;
     
-    std::time_t globalTime;
+    std::time_t globalTime; //TODO: delete
+    std::time_t initialTime;
+    std::time_t endTime;
+    
+    ci::Timer mGlobalTimer;
+    
     
     csys::Database mDatabase;
     
     std::shared_ptr<csys::Plane> activePlane;
     
     
-    bool doQuery = true;
+    bool doQuery = false;
     
     params::InterfaceGlRef mParams;
     
@@ -84,6 +111,18 @@ class CirculatorySysApp : public App {
 };
 
 
+CirculatorySysApp::CirculatorySysApp(){
+    
+
+    
+}
+
+
+void CirculatorySysApp::prepareSetup(app::AppBase::Settings* settings ){
+    
+ 
+    
+}
 
 
 void CirculatorySysApp::setup()
@@ -93,23 +132,28 @@ void CirculatorySysApp::setup()
     
     mDatabase.setup();
     
-    
-    auto keyBuffer = loadAsset( "initcommand.cskey" )->getBuffer();
-    
-    std::string keyString = std::string( static_cast<char *>( keyBuffer->getData() ), keyBuffer->getSize() ) + "\n";
+    mDatabase.queryEveryPlane();
     
     
     globalTime = std::time(nullptr);
     
     
-    m2DMap  = gl::Texture::create(loadImage( loadAsset( "map.png")  ) );
+    m2DMap  = gl::Texture::create(loadImage( loadAsset( "map_lat_long.jpg")  ) );
     getWindow()->setSize(m2DMap->getSize());
     
     
     console() << "size: "  << getWindow()->getSize() << std::endl;
     
+
+    std::vector<vec2> vecs{ vec2(0), vec2(1), vec2(2), vec2(4) };
+
+    
+    
+    
     if( doQuery ){
         
+        auto keyBuffer = loadAsset( "initcommand.cskey" )->getBuffer();
+        std::string keyString = std::string( static_cast<char *>( keyBuffer->getData() ), keyBuffer->getSize() ) + "\n";
         
         
         auto settings = FlightAware::FAClient::Settings(App::io_service());
@@ -130,6 +174,16 @@ void CirculatorySysApp::setup()
         
     }
     
+    //activePlane = mDatabase.getPlane("SIA32-1489972800-schedule-0001");
+    
+    
+
+    
+    
+    CI_LOG_V( "initialTime: " << initialTime << " end time " << endTime );
+
+    
+
     // ---- Debug ---
     
 //    _CameraDebug.lookAt( vec3( 2.0f, 3.0f, 1.0f ), vec3( 0 ) );
@@ -143,6 +197,9 @@ void CirculatorySysApp::setup()
 //        
 //    });
 //    mParams = params::InterfaceGl::create("db", { 240, 300} );
+    
+    
+//    mGlobalTimer.start();
 }
 
 void CirculatorySysApp::mouseDown( MouseEvent event )
@@ -171,6 +228,31 @@ void CirculatorySysApp::updateFromDB(){
     
     
     
+    
+    
+}
+
+void CirculatorySysApp::setPlanes(){
+    
+//    mDatabase.queryEveryPlane();
+    mPlanes = &mDatabase.getPlanes();
+    
+    for(auto& plane : *mPlanes){
+        
+        mSortedPlanes.push_back( plane.second );
+    }
+    
+    auto cmp = [](const csys::PlaneRef& a, const csys::PlaneRef& b ){
+        
+        return a->getCreationTime() < b->getCreationTime();
+        
+    };
+    
+    std::sort(mSortedPlanes.begin(), mSortedPlanes.end(), cmp);
+    
+
+    initialTime = mSortedPlanes[0]->getCreationTime();
+    endTime = mSortedPlanes[mSortedPlanes.size() - 1]->getCreationTime();
     
     
 }
@@ -206,23 +288,25 @@ void CirculatorySysApp::updateFromQuery(){
 void CirculatorySysApp::update()
 {
     
-    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mDatabase.getPlanes().size() ) );
+    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mDatabase.getPlanes().size() ) + " \\ " +  to_string(getElapsedFrames()) );
     
     globalTime = std::time(nullptr);
 
-
-    if(getElapsedFrames() % 10 != 0){
-     return;
-    }
-
-
+    mDatabase.update();
     
     if(doQuery){
         updateFromQuery();
     }
     
-
+    if(mGlobalTimer.isStopped()){
+        mGlobalTimer.start();
+    }
     
+    
+    if( mDatabase.isQueryAvailable() &&  mPlanes == nullptr){
+        console() << "DONEE!" << std::endl;
+        setPlanes();
+    }
     
 }
 
@@ -230,87 +314,125 @@ void CirculatorySysApp::draw()
 {
     
     if(getElapsedFrames() < 10){
-        
-
-        gl::clear(  ColorA(0,0,0,1) );
- 
-        gl::color( ColorA(0.4, 0.1,0.1, 1.0) );
+    
+        gl::clear(  ColorA(0,0,0, 0.000f) );
+        gl::color(1.0f,0.1f, 0.1f, 1.0f);
         gl::draw(m2DMap);
-    
-        gl::color( ColorA(1.0f, 1.0f, 1.0f, 0.7f) ) ;
         
     }
     
-    {
-//        ui::ScopedWindow w("Flight Query");
-//        
-//        std::string buff = activePlane->getKey();
-//        ui::InputText("ID", &buff);
-//        
-//        ui::Text("id" );
-        
-    }
+    gl::enableAlphaBlending();
+    gl::color(1.0f,0.1f, 0.1f, 0.05f);
+    gl::draw(m2DMap);
     
     
-//    int neededRedraw = 0;
-    for(auto& p : mDatabase.getPlanes() ){
-        
-        auto& plane = p.second;
-        
-        plane.draw();
+    
+    
+    // Draw planes ----
+    long timeCursor = mGlobalTimer.getSeconds() * 500;
+    if(timeCursor > (endTime - initialTime ) ){
+        mGlobalTimer.start();
     }
+    
 
     
-    //-23.533773
-    //Longitude	-46.625290
+    gl::enableAdditiveBlending();
+    gl::begin(GL_LINES);
+    
+    int unbornPlanes = 0;
+    int deadPlanes = 0;
+    
+    
+    for(auto& plane : mSortedPlanes){
+    
+        
+    
+        time_t planeIntialTime = plane->getCreationTime()  - initialTime;
+    
+        time_t planeLastupdateTime = plane->getLastUpdateTime();
+        time_t planeEndTime = planeLastupdateTime  - initialTime;
     
 
-//    auto pos = csys::geo::latLongToCartesian(m2DMap->getSize(), {0,0} );
-//    gl::drawSolidCircle(pos, 5);
-//    
-//    pos = csys::geo::latLongToCartesian(m2DMap->getSize(), {-23.533773, -46.625290} );
-//    gl::drawSolidCircle(pos, 5);
-//    
-//    
-////    Latitude	51.509865
-////    Longitude	-0.118092
-//    pos = csys::geo::latLongToCartesian(m2DMap->getSize(), {51.509865, -0.118092} );
-//    gl::drawSolidCircle(pos, 5);
-//    
-//    
-//    auto latLong = csys::geo::cartesianToLatLong(m2DMap->getSize(), mMousePos);
-//    console() << latLong << endl;
-//
-//    
-//    pos = csys::geo::latLongToCartesian(m2DMap->getSize(), latLong );
-//    gl::drawSolidCircle(pos, 8);
-    
-//    auto positions = activePlane->getPositions();
-//    
-//    for (int i = 1; i < positions.size(); i++) {
-//        
-//        
-//        auto a = positions[i];
-//        auto b = positions[i-1];
-//        
-//        gl::drawLine(a, b);
-//        
-//    }
-//    
+        if( timeCursor < planeIntialTime){
+            unbornPlanes++;
+            continue;
+        }else if(timeCursor > planeEndTime){
+            deadPlanes++;
+            continue;
+        }
+        
+            
+        float deltaTime = planeEndTime - planeIntialTime;
+        if(deltaTime == 0){
+            continue;
+        }
+        
+        
+        float normalizedTime = (timeCursor - planeIntialTime) / deltaTime;
+        auto positions = plane->getPositions();
     
     
-//    auto coord = csys::geo::cartesianToLatLong(m2DMap->getSize(), mMousePos);
-//    coord =  csys::geo::latLongToCartesian(m2DMap->getSize(),  coord);
-//    
-//    
-//    gl::color( 0.0f, 0.0f, 1.0f );
-//    gl::drawSolidCircle( pointA, 20);
-//    
-//    gl::color(1.0f, 1.0f, 0.0f  );
-//    gl::drawSolidCircle( pointB, 10);
-//    
-//    console() << csys::geo::distanceLatLong( csys::geo::cartesianToLatLong(m2DMap->getSize(), pointA) , csys::geo::cartesianToLatLong(m2DMap->getSize(), pointB)) <<std::endl;
+    
+    
+        float normalizedIndex  = ci::constrain<float>(   normalizedTime *  (positions.size() - 1 ), 0, positions.size() - 1 );
+        
+        
+        auto latA = vectorLerp(positions, normalizedIndex);
+        
+        
+        auto pointA = csys::geo::latLongToCartesian(  m2DMap->getSize() , latA);
+        
+        gl::color( ColorA(0.6, 0.6, 0.8, 0.05) );
+        gl::vertex(pointA);
+        if(normalizedIndex > 1){
+            
+            auto latB = vectorLerp(positions, normalizedIndex - 1);
+            
+            auto geoDistance = csys::geo::distanceLatLong(latA, latB);
+            
+            auto pointB = csys::geo::latLongToCartesian( m2DMap->getSize() , latB);
+            
+            if( geoDistance < 500 && glm::distance(pointA, pointB) < 300){
+                
+                gl::color( ColorA(1.0, 1.0, 1.0, 0.01) );
+                gl::vertex(pointB);
+                
+            }else{
+                
+                gl::color( ColorA(1.0, 1.0, 1.0, 1.0) );
+                gl::vertex(pointA);
+            }
+            
+        }else{
+            
+            gl::color( ColorA(1.0, 1.0, 1.0, 1.0) );
+            gl::vertex(pointA);
+        }
+        
+        
+
+    }
+    gl::end();
+    
+    
+    ui::LabelText(to_string(unbornPlanes).c_str(), "unborn: ");
+    ui::LabelText(to_string(deadPlanes).c_str(), "dead: ");
+    
+    if(ui::Button("make query")){
+        
+        bsoncxx::builder::stream::document doc{};
+        doc  << "id" <<  "SIA32-1489972800-schedule-0001";
+        
+        mDatabase.addQuery(  std::move( doc.extract() ), [=]( csys::Database::DocContainer & cur ){
+            
+            console() << "query bt complete ----------" << std::endl;
+            
+            cur.clear();
+            
+        });
+    }
+    
 }
 
-CINDER_APP( CirculatorySysApp, RendererGl( RendererGl::Options().msaa(4) ) )
+CINDER_APP( CirculatorySysApp, RendererGl( RendererGl::Options().msaa(8) ) );
 
