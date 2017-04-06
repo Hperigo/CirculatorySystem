@@ -19,7 +19,7 @@
 
 namespace csys {
     
-    
+    class PlaneManager;
     typedef std::shared_ptr<class Plane> PlaneRef;
     
     class Plane{
@@ -76,14 +76,29 @@ namespace csys {
             return lastUpdateTime;
         };
         
+        float getNormalizedTime() const{
+            return normalizedTime;
+        };
+        
+        
+        
         std::vector<ci::vec2> getPositions() const{
             return positions;
         }
+        
+        void setActive(bool a){
+            active = a;
+        }
+        bool isActive()const { return active; }
         
         bool draw();
         
         
     protected:
+        
+        float normalizedTime = 0.0f;
+        
+        bool active = true;
         bool needsRedraw = false;
         
         ci::vec2 position;
@@ -95,6 +110,8 @@ namespace csys {
         
         std::string mKey;
         std::vector<ci::vec2> positions;
+        
+        friend class csys::PlaneManager;
 
     };
     

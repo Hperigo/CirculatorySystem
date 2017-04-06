@@ -21,33 +21,42 @@ namespace csys {
         
     public:
         
-        void init();
-        
-        void calculateInitialTime();
-        void calculateEndTime();
+        void initFromDB();
         
         void update();
+        void drawUi();
         
-        // -----
-        // make initial query
-        // sort planes
-        // calculate initial Time
-        // calculate end Time
-        // update
+        void sortQueryPlanes();
+        std::time_t calculateInitialTime();
+        std::time_t calculateEndTime();
         
+        double getGlobalTime() const {
+            return mGlobalTime;
+        }
         
-        // MPlanes
-        // MDB
+        std::map<std::string , csys::PlaneRef>& getPlanes() { return mPlanesMap; }
+        std::vector<csys::PlaneRef>& getSortedPlanes() { return mSortedPlanes; }
         
     private:
         
         std::time_t mInitialTime;
         std::time_t mEndTime;
         
-        ci::Timer mGlobalTimer;
-        
+        ci::Timer mTimer;
+        double mGlobalTime;
+        int mSpeed = 1500;
         
         csys::Database mDatabase;
+        
+        std::map<std::string , csys::PlaneRef> mPlanesMap;
+        std::vector<csys::PlaneRef> mSortedPlanes;
+        
+        
+        // stats
+        size_t unbornPlanes = 0;
+        size_t deadPlanes = 0;
+        
+        
     };
     
 }

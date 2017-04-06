@@ -19,7 +19,7 @@
 
 #include "FAClient.hpp"
 #include "Plane.hpp"
-#include "Database.hpp"
+#include "PlaneManager.hpp"
 
 
 using namespace ci;
@@ -89,14 +89,14 @@ class CirculatorySysApp : public App {
     
     vec2 mMousePos;
     
-    std::time_t globalTime; //TODO: delete
+    
     std::time_t initialTime;
     std::time_t endTime;
     
     ci::Timer mGlobalTimer;
     
+    csys::PlaneManager mPlaneManager;
     
-    csys::Database mDatabase;
     
     std::shared_ptr<csys::Plane> activePlane;
     
@@ -130,12 +130,12 @@ void CirculatorySysApp::setup()
     
     ui::initialize();
     
-    mDatabase.setup();
+//    mDatabase.setup();
+//
+//    mDatabase.queryEveryPlane();
+
     
-    mDatabase.queryEveryPlane();
-    
-    
-    globalTime = std::time(nullptr);
+    mPlaneManager.initFromDB();
     
     
     m2DMap  = gl::Texture::create(loadImage( loadAsset( "map_lat_long.jpg")  ) );
@@ -177,7 +177,7 @@ void CirculatorySysApp::setup()
     //activePlane = mDatabase.getPlane("SIA32-1489972800-schedule-0001");
     
     
-
+    setFrameRate(30);
     
     
     CI_LOG_V( "initialTime: " << initialTime << " end time " << endTime );
@@ -224,40 +224,6 @@ void CirculatorySysApp::mouseMove( MouseEvent event )
     
 }
 
-void CirculatorySysApp::updateFromDB(){
-    
-    
-    
-    
-    
-}
-
-void CirculatorySysApp::setPlanes(){
-    
-//    mDatabase.queryEveryPlane();
-    mPlanes = &mDatabase.getPlanes();
-    
-    for(auto& plane : *mPlanes){
-        
-        mSortedPlanes.push_back( plane.second );
-    }
-    
-    auto cmp = [](const csys::PlaneRef& a, const csys::PlaneRef& b ){
-        
-        return a->getCreationTime() < b->getCreationTime();
-        
-    };
-    
-    std::sort(mSortedPlanes.begin(), mSortedPlanes.end(), cmp);
-    
-
-    initialTime = mSortedPlanes[0]->getCreationTime();
-    endTime = mSortedPlanes[mSortedPlanes.size() - 1]->getCreationTime();
-    
-    
-}
-
-
 void CirculatorySysApp::updateFromQuery(){
     
     for(auto& s : commands){
@@ -277,7 +243,7 @@ void CirculatorySysApp::updateFromQuery(){
             }
             
             
-            mDatabase.appendData( j );
+//            mDatabase.appendData( j );
             
         }
     }
@@ -288,26 +254,20 @@ void CirculatorySysApp::updateFromQuery(){
 void CirculatorySysApp::update()
 {
     
-    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mDatabase.getPlanes().size() ) + " \\ " +  to_string(getElapsedFrames()) );
+//    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mDatabase.getPlanes().size() ) + " \\ " +  to_string(getElapsedFrames()) );
     
-    globalTime = std::time(nullptr);
-
-    mDatabase.update();
     
     if(doQuery){
         updateFromQuery();
     }
     
-    if(mGlobalTimer.isStopped()){
-        mGlobalTimer.start();
-    }
+//    if( mDatabase.isQueryAvailable() &&  mPlanes == nullptr){
+//        console() << "DONEE!" << std::endl;
+//        setPlanes();
+//    }
     
     
-    if( mDatabase.isQueryAvailable() &&  mPlanes == nullptr){
-        console() << "DONEE!" << std::endl;
-        setPlanes();
-    }
-    
+    mPlaneManager.update();
 }
 
 void CirculatorySysApp::draw()
@@ -329,7 +289,7 @@ void CirculatorySysApp::draw()
     
     
     // Draw planes ----
-    long timeCursor = mGlobalTimer.getSeconds() * 500;
+    long timeCursor = mPlaneManager.getGlobalTime() * 500;
     if(timeCursor > (endTime - initialTime ) ){
         mGlobalTimer.start();
     }
@@ -340,46 +300,21 @@ void CirculatorySysApp::draw()
     gl::begin(GL_LINES);
     
     int unbornPlanes = 0;
-    int deadPlanes = 0;
     
-    
-    for(auto& plane : mSortedPlanes){
-    
+    auto sortedPlanes = mPlaneManager.getSortedPlanes();
+    for(auto& plane : sortedPlanes){
         
-    
-        time_t planeIntialTime = plane->getCreationTime()  - initialTime;
-    
-        time_t planeLastupdateTime = plane->getLastUpdateTime();
-        time_t planeEndTime = planeLastupdateTime  - initialTime;
-    
-
-        if( timeCursor < planeIntialTime){
-            unbornPlanes++;
-            continue;
-        }else if(timeCursor > planeEndTime){
-            deadPlanes++;
+        
+        if(!plane->isActive()){
             continue;
         }
         
-            
-        float deltaTime = planeEndTime - planeIntialTime;
-        if(deltaTime == 0){
-            continue;
-        }
+        unbornPlanes++;
         
-        
-        float normalizedTime = (timeCursor - planeIntialTime) / deltaTime;
         auto positions = plane->getPositions();
-    
-    
-    
-    
-        float normalizedIndex  = ci::constrain<float>(   normalizedTime *  (positions.size() - 1 ), 0, positions.size() - 1 );
-        
+        float normalizedIndex = ci::constrain<float>(   plane->getNormalizedTime() *  (positions.size() - 1 ), 0, positions.size() - 1 );
         
         auto latA = vectorLerp(positions, normalizedIndex);
-        
-        
         auto pointA = csys::geo::latLongToCartesian(  m2DMap->getSize() , latA);
         
         gl::color( ColorA(0.6, 0.6, 0.8, 0.05) );
@@ -409,28 +344,26 @@ void CirculatorySysApp::draw()
             gl::vertex(pointA);
         }
         
-        
-
     }
     gl::end();
     
     
-    ui::LabelText(to_string(unbornPlanes).c_str(), "unborn: ");
-    ui::LabelText(to_string(deadPlanes).c_str(), "dead: ");
     
-    if(ui::Button("make query")){
-        
-        bsoncxx::builder::stream::document doc{};
-        doc  << "id" <<  "SIA32-1489972800-schedule-0001";
-        
-        mDatabase.addQuery(  std::move( doc.extract() ), [=]( csys::Database::DocContainer & cur ){
+    
+    // DRAW UI ----------
+    {
+        ui::ScopedWindow w("General");
+        ui::LabelText(to_string(getAverageFps()).c_str(), "FPS: ");
+        if(ui::Button("make query")){
             
-            console() << "query bt complete ----------" << std::endl;
-            
-            cur.clear();
-            
-        });
+        }
     }
+    
+    {
+        ui::ScopedWindow w("Plane Manager");
+        mPlaneManager.drawUi();
+    }
+
     
 }
 

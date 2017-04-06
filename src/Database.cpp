@@ -32,6 +32,10 @@ namespace csys {
         }
         
         
+        ci::app::App::AppBase::get()->getSignalUpdate().connect( [&]{
+            this->update();
+        });
+        
     }
     
     
