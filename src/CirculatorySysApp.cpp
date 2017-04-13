@@ -2,8 +2,9 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 
-
+// blocks
 #include "CinderImGui.h"
+#include "Syphon.h"
 
 // 3D
 #include "cinder/CameraUi.h"
@@ -14,12 +15,15 @@
 #include "cinder/Timer.h"
 #include "cinder/params/Params.h"
 
-// mine
+
+// project
 #include "GeoUtils.h"
 
 #include "FAClient.hpp"
 #include "Plane.hpp"
 #include "PlaneManager.hpp"
+#include "Render.hpp"
+
 
 
 using namespace ci;
@@ -27,27 +31,11 @@ using namespace ci::app;
 using namespace std;
 
 
-template<typename T>
-T vectorLerp( const std::vector<T>& values, float t)
-{
-    
-    
-    int lowerIndex = std::floor(t);
-    int upperIndex = std::ceil(t);
-
-    float f;
-    float scaledTime = modf(t, &f);
-
-    T value = ci::lerp<T>(values[lowerIndex], values[upperIndex], scaledTime);
-    
-    return value;
-}
-
-
 class CirculatorySysApp : public App {
   public:
 
     CirculatorySysApp();
+    
     void prepareSetup(app::App::Settings* settings );
 	void setup() override;
     
@@ -55,6 +43,7 @@ class CirculatorySysApp : public App {
 	void mouseDown( MouseEvent event ) override;
     void mouseMove( MouseEvent event ) override;
 	
+    void renderFbo();
     void draw() override;
     
     void update() override;
@@ -67,53 +56,73 @@ class CirculatorySysApp : public App {
     
     gl::BatchRef        _wireGrid;
     
+    gl::BatchRef        mSphere;
     
-    gl::TextureRef m2DMap;
-    vec2 mLastPoint;
-
     std::shared_ptr<FlightAware::FAClient> mFAClientRef;
-    
+    csys::PlaneManager* mPlaneManager;
+
+    // wat
     int once = 0;
     unsigned long int numberOfCalls = 0;
+
+    reza::syphon::Server mSyphonServer;
+
+    vec2 mMousePos;
+        
     
+
+    bool doQuery = false;
     
     std::vector<vec2> points;
     std::vector<string> commands;
     
-    void setPlanes();
     
-//    std::set<csys::Plane> mPlanes;
-    std::map<std::string , csys::PlaneRef>* mPlanes = nullptr;
-    std::vector<csys::PlaneRef> mSortedPlanes;
-
-    
-    vec2 mMousePos;
+    csys::Render::RenderSettings* mSettings;
+    csys::Render mRender;
     
     
-    std::time_t initialTime;
-    std::time_t endTime;
+    // Settings -----
+    class MainSettings : public csys::Settings{
+        
+    public:
+        MainSettings(){
+            
+        };
+        virtual ~MainSettings(){
+            
+        }
+        
+        
+        void drawUi() override{
+            
+            ui::Checkbox("Draw sphere", &drawSphere);
+            
+        }
+        
+        void save() override{
+         
+            
+            
+        }
+        
+        void load() override{
+            
+            
+        }
+        
+        bool drawSphere = true;
+        
+        CirculatorySysApp* app;
+    };
     
-    ci::Timer mGlobalTimer;
     
-    csys::PlaneManager mPlaneManager;
-    
-    
-    std::shared_ptr<csys::Plane> activePlane;
-    
-    
-    bool doQuery = false;
-    
-    params::InterfaceGlRef mParams;
-    
-    bool whatPoint = false;
-    vec2 pointA;
-    vec2 pointB;
+    MainSettings mMainSettings;
 };
+
 
 
 CirculatorySysApp::CirculatorySysApp(){
     
-
     
 }
 
@@ -130,26 +139,21 @@ void CirculatorySysApp::setup()
     
     ui::initialize();
     
-//    mDatabase.setup();
-//
-//    mDatabase.queryEveryPlane();
+    mSettings = &mRender.mSettings;
+    
+    mPlaneManager = &csys::PlaneManager::instance();
+    mPlaneManager->initFromDB();
+    
+    
+    getWindow()->setSize(mSettings->windowSize);
+    
+    
+    mRender.setup( {1280, 640} );
+    
+    mSyphonServer.setName("Csys");
+    
+    CI_LOG_V( "window size: "  << getWindow()->getSize() );
 
-    
-    mPlaneManager.initFromDB();
-    
-    
-    m2DMap  = gl::Texture::create(loadImage( loadAsset( "map_lat_long.jpg")  ) );
-    getWindow()->setSize(m2DMap->getSize());
-    
-    
-    console() << "size: "  << getWindow()->getSize() << std::endl;
-    
-
-    std::vector<vec2> vecs{ vec2(0), vec2(1), vec2(2), vec2(4) };
-
-    
-    
-    
     if( doQuery ){
         
         auto keyBuffer = loadAsset( "initcommand.cskey" )->getBuffer();
@@ -173,46 +177,28 @@ void CirculatorySysApp::setup()
         });
         
     }
-    
-    //activePlane = mDatabase.getPlane("SIA32-1489972800-schedule-0001");
-    
-    
+
     setFrameRate(30);
     
     
-    CI_LOG_V( "initialTime: " << initialTime << " end time " << endTime );
-
-    
-
     // ---- Debug ---
     
-//    _CameraDebug.lookAt( vec3( 2.0f, 3.0f, 1.0f ), vec3( 0 ) );
-//    _CameraDebug.setPerspective( 40.0f, getWindowAspectRatio(), 0.01f, 100.0f );
-//    _CamUi = CameraUi( &_CameraDebug, getWindow() );
-//    
-//    auto colorShader = gl::getStockShader( gl::ShaderDef().color() );
-//    _wireGrid = gl::Batch::create( geom::WirePlane().size( vec2( 10 ) ).subdivisions( ivec2( 10 ) ), colorShader );
-//    
-//    getWindow()->getSignalResize().connect([&]{
-//        
-//    });
-//    mParams = params::InterfaceGl::create("db", { 240, 300} );
+    _CameraDebug.lookAt( vec3( 2.0f, 3.0f, 1.0f ), vec3( 0 ) );
+    _CameraDebug.setPerspective( 40.0f, getWindowAspectRatio(), 0.01f, 100.0f );
+    _CamUi = CameraUi( &_CameraDebug, getWindow() );
+    
+    auto colorShader = gl::getStockShader( gl::ShaderDef().color() );
+    _wireGrid = gl::Batch::create( geom::WirePlane().size( vec2( 10 ) ).subdivisions( ivec2( 10 ) ), colorShader );
     
     
-//    mGlobalTimer.start();
+    
+    mSphere = gl::Batch::create(geom::Sphere().subdivisions(32).radius(3), gl::getStockShader( gl::ShaderDef().color().texture() ));
+    
 }
 
 void CirculatorySysApp::mouseDown( MouseEvent event )
 {
  
-    if(whatPoint){
-        pointA = event.getPos();
-    }
-    else{
-        pointB = event.getPos();
-    }
-    
-    whatPoint = !whatPoint;
     
 }
 
@@ -253,10 +239,6 @@ void CirculatorySysApp::updateFromQuery(){
 
 void CirculatorySysApp::update()
 {
-    
-//    getWindow()->setTitle( to_string(getAverageFps()) + " | " + to_string( mDatabase.getPlanes().size() ) + " \\ " +  to_string(getElapsedFrames()) );
-    
-    
     if(doQuery){
         updateFromQuery();
     }
@@ -267,105 +249,76 @@ void CirculatorySysApp::update()
 //    }
     
     
-    mPlaneManager.update();
+    mPlaneManager->update();
+    
+    mRender.renderPlaneFbo();
+    mRender.renderTerminatorFbo();
+    mRender.renderCompose();
+
+}
+
+
+void CirculatorySysApp::renderFbo(){
+    
 }
 
 void CirculatorySysApp::draw()
 {
     
-    if(getElapsedFrames() < 10){
+    // set matrices
+    gl::ScopedViewport v( vec2(0), getWindowSize() );
     
-        gl::clear(  ColorA(0,0,0, 0.000f) );
-        gl::color(1.0f,0.1f, 0.1f, 1.0f);
-        gl::draw(m2DMap);
-        
-    }
-    
+    // clear
+    gl::clear( Color(0.3, 0.3, 0.3) );
     gl::enableAlphaBlending();
-    gl::color(1.0f,0.1f, 0.1f, 0.05f);
-    gl::draw(m2DMap);
     
-    
-    
-    
-    // Draw planes ----
-    long timeCursor = mPlaneManager.getGlobalTime() * 500;
-    if(timeCursor > (endTime - initialTime ) ){
-        mGlobalTimer.start();
-    }
-    
+    auto tex = mRender.mComposeFbo->getColorTexture();
 
+
+    if( mMainSettings.drawSphere ){
+        
+        gl::setMatrices(_CameraDebug);
+        gl::enableDepth(true);
+
+        _wireGrid->draw();
+        
+        gl::ScopedTextureBind t(tex);
+        mSphere->draw();
+        
+        gl::enableDepth(false);
+    }else{
+        
+        gl::setMatricesWindow(getWindowWidth(), getWindowHeight());
+        
+        ////     Send to syphon
+        mSyphonServer.bind( {1280, 640} );
+        gl::draw( tex, Rectf(0,0, 1280, 640) );
+        mSyphonServer.unbind();
     
-    gl::enableAdditiveBlending();
-    gl::begin(GL_LINES);
-    
-    int unbornPlanes = 0;
-    
-    auto sortedPlanes = mPlaneManager.getSortedPlanes();
-    for(auto& plane : sortedPlanes){
-        
-        
-        if(!plane->isActive()){
-            continue;
-        }
-        
-        unbornPlanes++;
-        
-        auto positions = plane->getPositions();
-        float normalizedIndex = ci::constrain<float>(   plane->getNormalizedTime() *  (positions.size() - 1 ), 0, positions.size() - 1 );
-        
-        auto latA = vectorLerp(positions, normalizedIndex);
-        auto pointA = csys::geo::latLongToCartesian(  m2DMap->getSize() , latA);
-        
-        gl::color( ColorA(0.6, 0.6, 0.8, 0.05) );
-        gl::vertex(pointA);
-        if(normalizedIndex > 1){
-            
-            auto latB = vectorLerp(positions, normalizedIndex - 1);
-            
-            auto geoDistance = csys::geo::distanceLatLong(latA, latB);
-            
-            auto pointB = csys::geo::latLongToCartesian( m2DMap->getSize() , latB);
-            
-            if( geoDistance < 500 && glm::distance(pointA, pointB) < 300){
-                
-                gl::color( ColorA(1.0, 1.0, 1.0, 0.01) );
-                gl::vertex(pointB);
-                
-            }else{
-                
-                gl::color( ColorA(1.0, 1.0, 1.0, 1.0) );
-                gl::vertex(pointA);
-            }
-            
-        }else{
-            
-            gl::color( ColorA(1.0, 1.0, 1.0, 1.0) );
-            gl::vertex(pointA);
-        }
+        gl::draw( tex, Rectf(0,0, 1280, 640) );
         
     }
-    gl::end();
-    
-    
     
     
     // DRAW UI ----------
     {
         ui::ScopedWindow w("General");
         ui::LabelText(to_string(getAverageFps()).c_str(), "FPS: ");
-        if(ui::Button("make query")){
-            
-        }
+        mMainSettings.drawUi();
     }
     
     {
         ui::ScopedWindow w("Plane Manager");
-        mPlaneManager.drawUi();
+        mPlaneManager->drawUi();
+    }
+    
+    {
+        ui::ScopedWindow w("Render settings");
+        mSettings->drawUi();
     }
 
     
 }
 
-CINDER_APP( CirculatorySysApp, RendererGl( RendererGl::Options().msaa(8) ) );
+CINDER_APP( CirculatorySysApp, RendererGl( RendererGl::Options().msaa(4) ) );
 

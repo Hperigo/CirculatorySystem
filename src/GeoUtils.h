@@ -15,7 +15,9 @@ namespace csys { namespace geo {
     
     
    inline ci::vec2 latLongToCartesian(ci::vec2 size, ci::vec2 point){
-        
+       
+       
+       
         float width = size.x;
         float height = size.y;
         
@@ -56,18 +58,23 @@ namespace csys { namespace geo {
         double a = sin( deltaLat /2.0) * sin( deltaLat /2.0) +
         cos(latA) * cos(latB) *
         sin(deltaLong/2.0f) * sin(deltaLong/2.0);
-        
-        
+       
         double c = 2.0 *  atan2(sqrt(a), sqrt(1.0 - a));
-        
         double d = R * c;
-        
-        
-        return d *0.001;
+       
+        return d * 0.001; // in km
     }
     
     
-    
+    inline ci::vec2 getTerminatorCoords(float lat, float lon, float gamma){
+        
+        ci::vec2 terminator;
+
+        terminator.x = glm::atan(gamma * std::sin( glm::radians(lat - lon ) )) * (180.0f / M_PI);
+        terminator.y = lat;
+        
+        return terminator;
+    }
     
 } }
 

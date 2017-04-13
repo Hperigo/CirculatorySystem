@@ -21,14 +21,18 @@ namespace csys {
     using bsoncxx::builder::stream::finalize;
     using bsoncxx::builder::stream::open_array;
     using bsoncxx::builder::stream::open_document;
-    
+
     
     // DB mode
     void PlaneManager::initFromDB(){
         
+        CI_LOG_I("Init plane manager");
+        
         mDatabase.setup();
 
         mDatabase.addQuery( document{} << finalize , [&] ( Database::DocContainer& planes ){
+            
+            CI_LOG_I("Init callback");
             
             //
             mPlanesMap.clear();

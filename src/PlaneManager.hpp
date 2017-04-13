@@ -21,6 +21,13 @@ namespace csys {
         
     public:
         
+        
+        static PlaneManager& instance()
+        {
+            static PlaneManager instance;
+            return instance;
+        }
+        
         void initFromDB();
         
         void update();

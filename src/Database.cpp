@@ -9,6 +9,7 @@
 
 #include "cinder/Timer.h"
 #include "cinder/Thread.h"
+#include "cinder/Log.h"
 
 #include "Database.hpp"
 #include "GeoUtils.h"
@@ -18,23 +19,28 @@ namespace csys {
     
     void Database::setup(){
         
-        mongocxx::uri uri("mongodb://127.0.0.1:27017");
-        mMongoClient = mongocxx::client(uri);
-        
-        try {
-        
-        mDB = mMongoClient["csys"];
-        mCollection = mDB["Planes"];
-            
-            
-        } catch (std::exception& e) {
-            std::cout << "error: " << e.what() << std::endl;
-        }
-        
+
+//        
+//        try {
+//            
+//            
+//            mongocxx::uri uri("mongodb://127.0.0.1:27017");
+//            mMongoClient = mongocxx::client(uri);
+//            mDB = mMongoClient["csys"];
+//            mCollection = mDB["Planes"];
+//
+//
+//            CI_LOG_I("Connected to Mongodb");
+//            
+//        } catch (std::exception& e) {
+//            CI_LOG_EXCEPTION("Error on connecting to DB", e);
+//        }
+    
         
         ci::app::App::AppBase::get()->getSignalUpdate().connect( [&]{
             this->update();
         });
+
         
     }
     
@@ -63,7 +69,7 @@ namespace csys {
             
             auto oldPos = found->second->getPosition();
             
-            // 500km, distance threashold
+            // 100km, distance threashold
             if( csys::geo::distanceLatLong(newPos, oldPos) < 100 ){
                 return false;
             }
@@ -116,9 +122,6 @@ namespace csys {
         }catch(std::exception& e){
             std::cout << "error inserting plane" << e.what() << std::endl;
         }
-        
-        
-    
     }
     
     
@@ -164,26 +167,7 @@ namespace csys {
 
     void Database::queryEveryPlane(){
 
-        
-//        ci::Timer t(true);
-//
-//        mongocxx::options::find opt;
-////        opt.limit(50000);
-//        opt.sort( document{} << "creationTime" << 1 << finalize );
-//
-//        mongocxx::cursor cursor = mCollection.find(document{} << finalize, opt);
-//        mPlanes.clear();
-//        
-//        for(auto doc : cursor) {
-//            auto plane =  std::make_shared<csys::Plane>( doc["id"].get_utf8().value.to_string(), doc );
-//            mPlanes[plane->getKey()] = plane;
-//        }
-//        
-
-        
-        
         addQuery( document{} << finalize , [&]( DocContainer& cursor ){
-            
             
             mPlanes.clear();
             
@@ -193,30 +177,9 @@ namespace csys {
             
             isMainQueryDone = true;
             ci::app::console() << "query ended " << std::endl;
+            
         });
         
-    }
-    
-    
-    void Database::queryEveryPlaneAsync(){
-        
-//        mQueryFuture = std::async( std::launch::async, [&]{
-//            
-//            ci::app::console() << "initializing thread";
-//            
-//            this->queryEveryPlane();
-//            
-//            ci::app::console() << " >>> done";
-//            
-//        });
-        
-        
-        
-    }
-    
-    bool Database::isQueryAvailable(){
-        
-        return isMainQueryDone;
     }
     
     void Database::update(){
@@ -253,26 +216,36 @@ namespace csys {
     
         QueryResultRef result = std::make_shared< QueryResult> ();
         
+        CI_LOG_I("Added query");
         
         result->fnFucntion = fn;
 
         result->future = std::async(std::launch::async, [&, doc, result]{
             ci::ThreadSetup t;
-
-            mongocxx::uri uri("mongodb://127.0.0.1:27017");
-            auto client = mongocxx::client(uri);
-            
-            auto db  = client["csys"];
-            auto colllection = db["Planes"];
-            
-            mongocxx::cursor cursor = colllection.find(doc.view());
-            
             DocContainer docs;
             
-            for(auto&& d : cursor){
+            try{
+                mongocxx::uri uri("mongodb://127.0.0.1:27017");
+                auto client = mongocxx::client(uri);
                 
-              docs.push_back( std::make_shared<csys::Plane>( d["id"].get_utf8().value.to_string(), d ));
+                auto db  = client["csys"];
+                auto colllection = db["Planes"];
+                
+                mongocxx::cursor cursor = colllection.find(doc.view());
+                
+                
+                
+                for(auto&& d : cursor){
+                    
+                    docs.push_back( std::make_shared<csys::Plane>( d["id"].get_utf8().value.to_string(), d ));
+                }
+                
+                
+            }catch(std::exception &e){
+                
+                CI_LOG_EXCEPTION("Error connecting ot mongoDB", e);
             }
+
             
             return docs;
 

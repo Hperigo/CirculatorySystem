@@ -34,8 +34,9 @@ namespace csys {
     
     class Database{
         public:
+        
+        
         typedef std::vector< PlaneRef > DocContainer;
-
         struct QueryResult{
             
             std::function<void( DocContainer& cur )> fnFucntion;
@@ -44,14 +45,13 @@ namespace csys {
             bool isDirty = false;
             
         };
-        
         typedef std::shared_ptr<QueryResult> QueryResultRef;
-
         
-    
+        
+        
         void setup();
         
-        
+        // needs Clean-up, re-write when new key is available --------
         bool appendData(const  ci::JsonTree& jsonData);
         void queryEveryPlane();
         
@@ -60,12 +60,12 @@ namespace csys {
 
         csys::PlaneRef getPlane(const std::string& string_key);
         std::map<std::string, csys::PlaneRef>& getPlanes() { return mPlanes; };
+        // ------------------------
+        
         
         void update();
         void addQuery(const bsoncxx::document::value& doc, std::function<void( DocContainer& cur )> fn);
-//        void addQuery(const document& doc, const document::options& opt, const std::function<void( const document& doc)>& fn);
 
-        
     private:
         
         
