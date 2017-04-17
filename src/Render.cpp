@@ -54,7 +54,15 @@ namespace csys {
         ui::SliderFloat("Alpha clear", &fadeAlpha, 0.0f, 1.0f);
         ui::ColorEdit4("trail A", &trailColorA[0]);
         ui::ColorEdit4("trail B", &trailColorB[0]);
-        ui::ColorEdit4("trail tint", &tintColor[0]);
+
+        
+        ui::ColorEdit4("Map day tint", &mapDayTint[0]);
+        ui::ColorEdit4("Map night tint", &mapNightTint[0]);
+        
+        
+        ui::ColorEdit4("Planes day tint", &planesDayTint[0]);
+        ui::ColorEdit4("Planes night tint", &planesNightTint[0]);
+        
 
         ui::Dummy(ImVec2(0, 10));
         
@@ -111,11 +119,14 @@ namespace csys {
            auto path = getAssetPath("").string() + "/out.json";
             
             std::ofstream outFile(path);
-            cereal::JSONOutputArchive mOutArchive(outFile);
+            cereal::JSONOutputArchive archive(outFile);
             
             CI_LOG_I("Saving...");
             
-            mOutArchive(doClear, maxSpeed, fadeAlpha, trailColorA, trailColorB, tintColor, drawMap, mapColor, lat, lon, gamma, terminatorColor);
+            archive(doClear, maxSpeed, fadeAlpha,
+                        trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
+                        drawMap, mapColor,
+                        lat, lon, gamma, terminatorColor);
             
         }catch(std::exception &e){
             
@@ -130,10 +141,13 @@ namespace csys {
            
             auto path = getAssetPath("").string() + "/out.json";
             std::ifstream inFile(path);
-            cereal::JSONInputArchive mInArchive(inFile);
+            cereal::JSONInputArchive archive(inFile);
             
             CI_LOG_I("loading...");
-            mInArchive(doClear, maxSpeed, fadeAlpha, trailColorA, trailColorB, tintColor, drawMap, mapColor, lat, lon, gamma, terminatorColor);
+            archive(doClear, maxSpeed, fadeAlpha,
+                        trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
+                        drawMap, mapColor,
+                        lat, lon, gamma, terminatorColor);
             
             
         }catch(std::exception &e){
@@ -359,6 +373,14 @@ namespace csys {
         mComposeShader->uniform("uTexPlanes", 1);
         mComposeShader->uniform("uTexTerminator", 2);
         mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * 0.01f );
+        
+        // --- Colors
+        // Map
+        mComposeShader->uniform("uMapDayColor", mSettings.mapDayTint);
+        mComposeShader->uniform("uMapNightColor", mSettings.mapNightTint);
+        
+        mComposeShader->uniform("uPlanesDayColor", mSettings.planesDayTint);
+        mComposeShader->uniform("uPlanesNightColor", mSettings.planesNightTint);
         
         gl::drawSolidRect(Rectf(0,0,size.x, size.y) );
         

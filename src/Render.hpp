@@ -41,9 +41,18 @@ namespace csys {
             float maxSpeed = 10;
             float mapScale = 1.0f;
             float fadeAlpha = 0.1f;
-            ci::ColorA trailColorA {  0.9f, 0.8f, 0.1f, 0.9f };
-            ci::ColorA trailColorB {  0.9f, 0.5f, 0.1f, 0.1f };
-            ci::ColorA tintColor { 0.9, 0.6, 0.0, 0.9f };
+            
+            
+            ci::ColorA trailColorA {  1.0f, 1.0f, 1.0f, 0.9f };
+            ci::ColorA trailColorB {  1.0f, 1.0f, 1.0f, 0.1f };
+//            ci::ColorA tintColor { 0.9, 0.6, 0.0, 0.9f };
+            
+            ci::ColorA mapDayTint { 0.9, 0.6, 0.0, 1.0f };
+            ci::ColorA mapNightTint { 0.0, 0.0, 1.0, 1.0f };
+            
+            ci::ColorA planesDayTint { 1.0, 0.6, 0.0, 1.0f };
+            ci::ColorA planesNightTint { 0.0, 0.0, 1.0, 1.0f };
+            
             
             // Terminator Fbo
             float lat;
