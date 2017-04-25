@@ -6,6 +6,10 @@
 #include "CinderImGui.h"
 #include "Syphon.h"
 
+#include "CinderCereal.h"
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
+
 // 3D
 #include "cinder/CameraUi.h"
 #include "cinder/Log.h"
@@ -87,6 +91,8 @@ class CirculatorySysApp : public App {
     public:
         MainSettings(){
             
+
+            
         };
         virtual ~MainSettings(){
             
@@ -97,26 +103,64 @@ class CirculatorySysApp : public App {
             
             ui::Checkbox("Draw sphere", &drawSphere);
             
+            if(ui::Button("Save")){
+                save();
+            }
+            
+            if(ui::Button("Load")){
+                load();
+            }
+            
         }
         
         void save() override{
-         
+            app = (CirculatorySysApp*) app::App::get();
             
+            try{
+                auto path = app::getAssetPath("").string() + "/out_main.json";
+                
+                std::ofstream outFile(path);
+                cereal::JSONOutputArchive archive(outFile);
+                
+                CI_LOG_I("Saving...");
+                
+                archive( drawSphere, app->_CameraDebug );
+                
+            }catch(std::exception &e){
+                
+                CI_LOG_EXCEPTION("Error saving: ", e);
+            }
             
         }
         
         void load() override{
             
-            
+            try{
+                
+                auto path = app::getAssetPath("").string() + "/out_main.json";
+                std::ifstream inFile(path);
+                cereal::JSONInputArchive archive(inFile);
+                
+                CI_LOG_I("loading...");
+                archive(drawSphere, app->_CameraDebug);
+                
+                
+            }catch(std::exception &e){
+                
+                CI_LOG_EXCEPTION("Error loading: ", e );
+                
+            }
         }
         
-        bool drawSphere = true;
+        bool drawSphere = false;
         
         CirculatorySysApp* app;
+        
     };
     
     
     MainSettings mMainSettings;
+    friend class MainSettings;
 };
 
 
@@ -140,6 +184,7 @@ void CirculatorySysApp::setup()
     ui::initialize();
     
     mSettings = &mRender.mSettings;
+//    mMainSettings.load();
     
     mPlaneManager = &csys::PlaneManager::instance();
     mPlaneManager->initFromDB();
@@ -152,7 +197,7 @@ void CirculatorySysApp::setup()
     
     mSyphonServer.setName("Csys");
     
-    CI_LOG_V( "window size: "  << getWindow()->getSize() );
+    CI_LOG_I( "window size: "  << getWindow()->getSize() );
 
     if( doQuery ){
         
@@ -175,7 +220,6 @@ void CirculatorySysApp::setup()
         mFAClientRef->setErrorCallback( [&](const std::string& error){
             CI_LOG_E( "ssl error, " << error );
         });
-        
     }
 
     setFrameRate(30);
@@ -251,8 +295,12 @@ void CirculatorySysApp::update()
     
     mPlaneManager->update();
     
+    
+    //
     mRender.renderPlaneFbo();
     mRender.renderTerminatorFbo();
+    mRender.renderBlurFbo();
+    
     mRender.renderCompose();
 
 }

@@ -55,7 +55,7 @@ namespace csys {
         ui::ColorEdit4("trail A", &trailColorA[0]);
         ui::ColorEdit4("trail B", &trailColorB[0]);
 
-        
+        ui::Spacing();
         ui::ColorEdit4("Map day tint", &mapDayTint[0]);
         ui::ColorEdit4("Map night tint", &mapNightTint[0]);
         
@@ -63,7 +63,6 @@ namespace csys {
         ui::ColorEdit4("Planes day tint", &planesDayTint[0]);
         ui::ColorEdit4("Planes night tint", &planesNightTint[0]);
         
-
         ui::Dummy(ImVec2(0, 10));
         
         //terminator
@@ -77,7 +76,7 @@ namespace csys {
             Render::terminatorNeedsRedraw = true;
         }
         
-        if(ui::ColorEdit4("Color", &terminatorColor[0])){
+        if(ui::DragFloat("Blur Amt", &blurAmt)){
             Render::terminatorNeedsRedraw = true;
         }
 
@@ -85,9 +84,9 @@ namespace csys {
         
         ui::Dummy(ImVec2(0, 10));
         
-        ui::Checkbox("draw Map" , &drawMap);
-        ui::Checkbox("draw Fbo" , &drawFbo);
-        ui::ColorEdit4("map tint", &mapColor[0]);
+//        ui::Checkbox("draw Map" , &drawMap);
+//        ui::Checkbox("draw Fbo" , &drawFbo);
+//        ui::ColorEdit4("map tint", &mapColor[0]);
         
         
         
@@ -126,7 +125,7 @@ namespace csys {
             archive(doClear, maxSpeed, fadeAlpha,
                         trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
                         drawMap, mapColor,
-                        lat, lon, gamma, terminatorColor);
+                        lat, lon, gamma, blurAmt);
             
         }catch(std::exception &e){
             
@@ -147,7 +146,7 @@ namespace csys {
             archive(doClear, maxSpeed, fadeAlpha,
                         trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
                         drawMap, mapColor,
-                        lat, lon, gamma, terminatorColor);
+                        lat, lon, gamma, blurAmt);
             
             
         }catch(std::exception &e){
@@ -179,22 +178,35 @@ namespace csys {
         
         // FBO'S
         mPlanesFbo = gl::Fbo::create( 2560, 1280 , fmt );
-        mTerminatorFbo = gl::Fbo::create( 2560, 1280 , fmt );
         mComposeFbo = gl::Fbo::create( 2560, 1280 , fmt );
         
+        
+        
+        auto t_size = vec2(1280, 640);
+        
+        mTerminatorFbo = gl::Fbo::create( t_size.x, t_size.y , fmt );
+        mHorizontalFbo = gl::Fbo::create(t_size.x, t_size.y , fmt );
+        mVerticalFbo = gl::Fbo::create( t_size.x, t_size.y , fmt );
         
     }
     
     void Render::loadAssets(){
         
         try{
-            mMapTexture = gl::Texture::create(loadImage( loadAsset( "map_lat_long.jpg")));
+            mMapTexture = gl::Texture::create(loadImage( loadAsset( "map_lat_long_2.jpg")));
             mMapTexture->setWrap(GL_REPEAT, GL_REPEAT);
 
             
             mComposeShader = gl::GlslProg::create( gl::GlslProg::Format()
                                                   .vertex( loadAsset("composeVertex.glsl"))
                                                   .fragment(loadAsset("composeFrag.glsl")) );
+            
+            
+            mBlurShader = gl::GlslProg::create( gl::GlslProg::Format()
+                                               .vertex( loadAsset("blurVertex.glsl"))
+                                               .fragment(loadAsset("blurFrag.glsl")) );
+            
+            
         }catch(std::exception &e){
             
             CI_LOG_EXCEPTION("could not load render assets..", e);
@@ -272,15 +284,15 @@ namespace csys {
                     gl::color( finalColor );
                     gl::vertex(pointB);
                     
-                    gl::color( finalColor );
-                    gl::vertex(pointA-vec2(1));
-                    gl::color( finalColor );
-                    gl::vertex(pointB-vec2(1));
+//                    gl::color( finalColor );
+//                    gl::vertex(pointA-vec2(1));
+//                    gl::color( finalColor );
+//                    gl::vertex(pointB-vec2(1));
                     
-                    gl::color( finalColor );
-                    gl::vertex(pointA-vec2(2));
-                    gl::color( finalColor );
-                    gl::vertex(pointB-vec2(2));
+//                    gl::color( finalColor );
+//                    gl::vertex(pointA-vec2(2));
+//                    gl::color( finalColor );
+//                    gl::vertex(pointB-vec2(2));
                     
                 }
                 
@@ -307,7 +319,7 @@ namespace csys {
 
         gl::enableAlphaBlending();
         
-        gl::color(mSettings.terminatorColor);
+        gl::color( Color::white() );
         Path2d terminatorPath;
 
         terminatorPath.moveTo(vec2(0, -10));
@@ -343,6 +355,57 @@ namespace csys {
         
     }
     
+    void Render::renderBlurFbo(){
+        
+        {
+            auto size = mTerminatorFbo->getSize();
+
+            gl::ScopedFramebuffer f(mHorizontalFbo);
+            gl::ScopedViewport v( size  );
+            gl::setMatricesWindow( size );
+            
+            gl::clear(ColorA(0.0f,0.0f,0.0f,1.0f));
+            
+            
+            gl::ScopedGlslProg prog( mBlurShader );
+            auto tex = mTerminatorFbo->getColorTexture();
+            
+            mBlurShader->uniform("sample_offset", vec2( mSettings.blurAmt / size.x, 0.0f ) );
+            
+            tex->bind();
+            
+            gl::drawSolidRect( Rectf(0,0, size.x, size.y) );
+            
+            tex->unbind();
+        }
+        
+        
+        
+        {
+            auto size = mTerminatorFbo->getSize();
+            
+            gl::ScopedFramebuffer f(mVerticalFbo);
+            gl::ScopedViewport v( size  );
+            gl::setMatricesWindow( size );
+            
+            gl::clear(ColorA(0.0f,0.0f,0.0f,1.0f));
+            
+            
+            gl::ScopedGlslProg prog( mBlurShader );
+            auto tex = mHorizontalFbo->getColorTexture();
+            
+            mBlurShader->uniform("sample_offset", vec2( 0.0f , mSettings.blurAmt / size.y ) );
+            
+            tex->bind();
+            
+            gl::drawSolidRect( Rectf(0,0, size.x, size.y) );
+            
+            tex->unbind();
+        }
+        
+    }
+    
+    
     void Render::renderCompose(){
         
         auto size = mComposeFbo->getSize();
@@ -367,12 +430,12 @@ namespace csys {
         auto planesTexture = mPlanesFbo->getColorTexture();
         planesTexture->bind(1);
         
-        auto terminatorTexture = mTerminatorFbo->getColorTexture();
+        auto terminatorTexture = mVerticalFbo->getColorTexture();
         terminatorTexture->bind(2);
         
         mComposeShader->uniform("uTexPlanes", 1);
         mComposeShader->uniform("uTexTerminator", 2);
-        mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * 0.01f );
+        mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * -0.01f );
         
         // --- Colors
         // Map

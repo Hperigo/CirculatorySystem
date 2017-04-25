@@ -58,7 +58,8 @@ namespace csys {
             float lat;
             float lon;
             float gamma;
-            ci::ColorA terminatorColor;
+            float blurAmt = 1.0f;
+            
             
             //Main render
             bool drawMap = true;
@@ -87,7 +88,13 @@ namespace csys {
         
         // FBO's
         ci::gl::FboRef mPlanesFbo;
+        
+        // terminator
         ci::gl::FboRef mTerminatorFbo;
+        ci::gl::FboRef mHorizontalFbo;
+        ci::gl::FboRef mVerticalFbo;
+        
+        
         ci::gl::FboRef mComposeFbo;
         
         static bool terminatorNeedsRedraw;
@@ -95,10 +102,13 @@ namespace csys {
         ci::gl::TextureRef mMapTexture;
         
         ci::gl::GlslProgRef mComposeShader;
+        ci::gl::GlslProgRef mBlurShader;
+
         
         
         void renderPlaneFbo();
         void renderTerminatorFbo();
+        void renderBlurFbo();
         void renderCompose();
         
         
