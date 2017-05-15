@@ -9,6 +9,7 @@
 #include <string>
 
 #include "PlaneManager.hpp"
+#include "GeoUtils.h"
 
 #include "cinder/Log.h"
 #include "CinderImGui.h"
@@ -101,6 +102,7 @@ namespace csys {
             time_t planeEndTime = planeLastupdateTime  -  mInitialTime;
             
             
+            // check if plane exists in our time frame
             if( mGlobalTime < planeIntialTime){
                 plane->setActive(false);
                 unbornPlanes++;
@@ -110,12 +112,22 @@ namespace csys {
                 deadPlanes++;
                 continue;
             }
-            
-            
+        
             float deltaTime = planeEndTime - planeIntialTime;
             if(deltaTime == 0){
                 plane->setActive(false);
                 continue;
+            }
+            
+            // Plane will born
+            if(plane->isActive() == false){
+               
+                
+                auto pos =  geo::latLongToCartesian(mColorMap.getSize(), plane->getPositions()[0] );
+                
+                ci::ColorA col =  mColorMap.getPixel( pos );
+                
+                plane->setInitialColor(col);
             }
             
             plane->setActive(true);

@@ -189,6 +189,8 @@ void CirculatorySysApp::setup()
     mPlaneManager = &csys::PlaneManager::instance();
     mPlaneManager->initFromDB();
     
+    mPlaneManager->setColorMap(  loadImage(loadAsset("color_map.png"))  );
+    
     
     getWindow()->setSize(mSettings->windowSize);
     

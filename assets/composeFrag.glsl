@@ -32,7 +32,7 @@ void main( void )
 	vec4 planesDay = tPlanes * uPlanesDayColor;
 	vec4 planesNight = tPlanes * uPlanesNightColor;
 
-	vec4 planes = mix(planesDay, planesNight, tTerminator.r);
+	vec4 planes = tPlanes; // mix(planesDay, planesNight, tTerminator.r);
 
 	vec4 compose =  mix(map, planes, tPlanes.a);
 

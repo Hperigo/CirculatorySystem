@@ -174,10 +174,12 @@ namespace csys {
         
         auto fmt = gl::Fbo::Format();
         fmt.setColorTextureFormat( texFmt );
-        fmt.setSamples(0);
+        fmt.setSamples(4);
         
         // FBO'S
         mPlanesFbo = gl::Fbo::create( 2560, 1280 , fmt );
+        
+        fmt.setSamples(0);
         mComposeFbo = gl::Fbo::create( 2560, 1280 , fmt );
         
         
@@ -270,9 +272,9 @@ namespace csys {
                 auto geoDistance = csys::geo::distanceLatLong(latA, latB);
                 auto pixelDistance = glm::distance(pointA, pointB);
                 
-                float colorFactor =  constrain(pixelDistance / mSettings.maxSpeed, 0.0f, 1.0f);
+//                float colorFactor =  constrain(pixelDistance / mSettings.maxSpeed, 0.0f, 1.0f);
                 
-                ColorA finalColor = lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
+                ColorA finalColor =  plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
                 
                 
                 
@@ -435,7 +437,7 @@ namespace csys {
         
         mComposeShader->uniform("uTexPlanes", 1);
         mComposeShader->uniform("uTexTerminator", 2);
-        mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * -0.01f );
+        mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * -0.0f );
         
         // --- Colors
         // Map

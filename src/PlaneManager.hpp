@@ -41,6 +41,10 @@ namespace csys {
             return mGlobalTime;
         }
         
+        void setColorMap(const ci::Surface& surf){
+            mColorMap = surf;
+        }
+        
         std::map<std::string , csys::PlaneRef>& getPlanes() { return mPlanesMap; }
         std::vector<csys::PlaneRef>& getSortedPlanes() { return mSortedPlanes; }
         
@@ -51,7 +55,7 @@ namespace csys {
         
         ci::Timer mTimer;
         double mGlobalTime;
-        int mSpeed = 1500;
+        int mSpeed = 1;
         
         csys::Database mDatabase;
         
@@ -63,6 +67,9 @@ namespace csys {
         size_t unbornPlanes = 0;
         size_t deadPlanes = 0;
         
+        //surface
+        
+        ci::Surface mColorMap;
         
     };
     

@@ -80,7 +80,13 @@ namespace csys {
             return normalizedTime;
         };
         
+        void setInitialColor(ci::ColorA& c){
+            initialColor = c;
+        }
         
+        ci::ColorA getInitialColor(){
+            return initialColor;
+        }
         
         std::vector<ci::vec2> getPositions() const{
             return positions;
@@ -103,6 +109,8 @@ namespace csys {
         
         ci::vec2 position;
         ci::vec2 lastPosition;
+        
+        ci::ColorA initialColor;
         
         // infos
         std::time_t lastUpdateTime;
