@@ -39,9 +39,13 @@ class CirculatorySysApp : public App {
   public:
 
     CirculatorySysApp();
+    ~CirculatorySysApp();
     
     void prepareSetup(app::App::Settings* settings );
 	void setup() override;
+    
+    
+    void keyUp( KeyEvent event ) override;
     
     
 	void mouseDown( MouseEvent event ) override;
@@ -49,7 +53,7 @@ class CirculatorySysApp : public App {
 	
     void renderFbo();
     void draw() override;
-    
+//
     void update() override;
     void updateFromQuery();
     void updateFromDB();
@@ -84,7 +88,7 @@ class CirculatorySysApp : public App {
     csys::Render::RenderSettings* mSettings;
     csys::Render mRender;
     
-    
+
     // Settings -----
     class MainSettings : public csys::Settings{
         
@@ -103,6 +107,12 @@ class CirculatorySysApp : public App {
             
             ui::Checkbox("Draw sphere", &drawSphere);
             
+            ui::Checkbox("Start Fullscreen", &startFullScreen);
+            if(ui::Button("Set Fullscreen")){
+                app = (CirculatorySysApp*) app::App::get();
+                app->setFullScreen( !app->isFullScreen() );
+            }
+            
             if(ui::Button("Save")){
                 save();
             }
@@ -110,6 +120,18 @@ class CirculatorySysApp : public App {
             if(ui::Button("Load")){
                 load();
             }
+            
+            ui::Spacing();
+            ui::Spacing();
+            
+            if(ui::Button("QUIT")){
+                app = (CirculatorySysApp*) app::App::get();
+                
+                app->quit();
+            }
+            
+            
+
             
         }
         
@@ -122,9 +144,9 @@ class CirculatorySysApp : public App {
                 std::ofstream outFile(path);
                 cereal::JSONOutputArchive archive(outFile);
                 
-                CI_LOG_I("Saving...");
+                CI_LOG_I("Saving..." << startFullScreen);
                 
-                archive( drawSphere, app->_CameraDebug );
+                archive( drawSphere, startFullScreen );
                 
             }catch(std::exception &e){
                 
@@ -141,9 +163,10 @@ class CirculatorySysApp : public App {
                 std::ifstream inFile(path);
                 cereal::JSONInputArchive archive(inFile);
                 
-                CI_LOG_I("loading...");
-                archive(drawSphere, app->_CameraDebug);
                 
+                archive(drawSphere, startFullScreen);
+                
+                CI_LOG_I("loading..." << startFullScreen);
                 
             }catch(std::exception &e){
                 
@@ -153,16 +176,26 @@ class CirculatorySysApp : public App {
         }
         
         bool drawSphere = false;
+        bool startFullScreen = false;
         
         CirculatorySysApp* app;
+        
+        
         
     };
     
     
     MainSettings mMainSettings;
     friend class MainSettings;
+    
 };
 
+
+CirculatorySysApp::~CirculatorySysApp(){
+    
+    console() << "deconstructor"<< std::endl;
+    
+}
 
 
 CirculatorySysApp::CirculatorySysApp(){
@@ -180,11 +213,13 @@ void CirculatorySysApp::prepareSetup(app::AppBase::Settings* settings ){
 
 void CirculatorySysApp::setup()
 {
+
+    
     
     ui::initialize();
     
     mSettings = &mRender.mSettings;
-//    mMainSettings.load();
+    mMainSettings.load();
     
     mPlaneManager = &csys::PlaneManager::instance();
     mPlaneManager->initFromDB();
@@ -224,7 +259,9 @@ void CirculatorySysApp::setup()
         });
     }
 
-    setFrameRate(30);
+//    setFrameRate(30);
+    
+    gl::enableVerticalSync(false);
     
     
     // ---- Debug ---
@@ -240,6 +277,12 @@ void CirculatorySysApp::setup()
     
     mSphere = gl::Batch::create(geom::Sphere().subdivisions(32).radius(3), gl::getStockShader( gl::ShaderDef().color().texture() ));
     
+    
+    
+    if(mMainSettings.startFullScreen == true){
+        
+        setFullScreen(true);
+    }
 }
 
 void CirculatorySysApp::mouseDown( MouseEvent event )
@@ -250,14 +293,21 @@ void CirculatorySysApp::mouseDown( MouseEvent event )
 
 void CirculatorySysApp::mouseMove( MouseEvent event )
 {
-    mMousePos = event.getPos();
-    
+    mMousePos = event.getPos();    
+}
 
+
+void CirculatorySysApp::keyUp(cinder::app::KeyEvent event){
+    
+    if(event.getChar() == 'f' ){
+        setFullScreen( !isFullScreen() );
+    }
     
 }
 
 void CirculatorySysApp::updateFromQuery(){
     
+
     for(auto& s : commands){
         
         auto j = JsonTree(s);
@@ -281,10 +331,13 @@ void CirculatorySysApp::updateFromQuery(){
     }
     
     commands.clear();
+
 }
 
 void CirculatorySysApp::update()
 {
+    
+
     if(doQuery){
         updateFromQuery();
     }
@@ -302,9 +355,10 @@ void CirculatorySysApp::update()
     mRender.renderPlaneFbo();
     mRender.renderTerminatorFbo();
     mRender.renderBlurFbo();
-    
+    mRender.renderPlaneEdgeBlend();
     mRender.renderCompose();
-
+     
+    
 }
 
 
@@ -314,6 +368,7 @@ void CirculatorySysApp::renderFbo(){
 
 void CirculatorySysApp::draw()
 {
+    
     
     // set matrices
     gl::ScopedViewport v( vec2(0), getWindowSize() );
@@ -338,35 +393,59 @@ void CirculatorySysApp::draw()
         gl::enableDepth(false);
     }else{
         
-        gl::setMatricesWindow(getWindowWidth(), getWindowHeight());
         
-        ////     Send to syphon
-        mSyphonServer.bind( {1280, 640} );
-        gl::draw( tex, Rectf(0,0, 1280, 640) );
-        mSyphonServer.unbind();
+        vec2 syphonSize = { 2160,1080 };
+        
+        {
+         
+            gl::ScopedViewport v( vec2(0), syphonSize );
+            gl::setMatricesWindow(syphonSize.x, syphonSize.y);
+            
+            //        mSyphonServer.bind( {1280, 640} );
+            
+            mSyphonServer.bind( syphonSize );
+            gl::draw( tex, Rectf(0,0, syphonSize.x, syphonSize.y) );
+            mSyphonServer.unbind();
+        }
     
-        gl::draw( tex, Rectf(0,0, 1280, 640) );
+        {
+            gl::ScopedViewport v( vec2(0), getWindowSize() );
+
+            gl::setMatricesWindow(getWindowWidth(), getWindowHeight());
+            gl::draw( tex, Rectf(0,0, syphonSize.x, syphonSize.y) );
+        }
+
         
     }
     
-    
-    // DRAW UI ----------
+
     {
-        ui::ScopedWindow w("General");
-        ui::LabelText(to_string(getAverageFps()).c_str(), "FPS: ");
-        mMainSettings.drawUi();
-    }
-    
-    {
-        ui::ScopedWindow w("Plane Manager");
-        mPlaneManager->drawUi();
-    }
-    
-    {
-        ui::ScopedWindow w("Render settings");
-        mSettings->drawUi();
+        vec2 size = { 1000, 500 };
+        auto shader = gl::getStockShader( gl::ShaderDef().color().texture() );
+        gl::ScopedGlslProg prog(shader);
     }
 
+    
+    if(!isFullScreen()){
+    
+        // DRAW UI ----------
+        {
+            ui::ScopedWindow w("General");
+            ui::LabelText(to_string(getAverageFps()).c_str(), "FPS: ");
+            mMainSettings.drawUi();
+        }
+        
+        {
+            ui::ScopedWindow w("Plane Manager");
+            mPlaneManager->drawUi();
+        }
+        
+        {
+            ui::ScopedWindow w("Render settings");
+            mSettings->drawUi();
+        }
+
+    }
     
 }
 

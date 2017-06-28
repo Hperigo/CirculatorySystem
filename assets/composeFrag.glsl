@@ -20,22 +20,27 @@ in vec2	TexCoord;
 void main( void )
 {
 
-	vec4 tMap           = texture( uTexMap, TexCoord.st 	+ vec2(uTime, 0.0) );
-	vec4 tPlanes 		= texture( uTexPlanes, TexCoord.st  + vec2(uTime, 0.0));
+	vec2 texCood = TexCoord.st 	+ vec2(uTime, 0.0);
+
+	vec4 tMap           =  texture( uTexMap, texCood );
+	vec4 tPlanes 		= texture( uTexPlanes, texCood );
 	vec4 tTerminator    = texture( uTexTerminator, TexCoord.st);
 
 
-	vec4 mapDay = tMap * uMapDayColor;
-	vec4 mapNight = tMap * uMapNightColor;
-	vec4 map  = mix(mapDay , mapNight, tTerminator.r );
+	vec4 map = tMap * uMapDayColor;
 
-	vec4 planesDay = tPlanes * uPlanesDayColor;
-	vec4 planesNight = tPlanes * uPlanesNightColor;
+	vec4 compose =  mix(map, tPlanes, tPlanes.a);
+	oColor =   vec4( compose.rgb , 1.0);
 
-	vec4 planes = tPlanes; // mix(planesDay, planesNight, tTerminator.r);
 
-	vec4 compose =  mix(map, planes, tPlanes.a);
-
-	vec3 inverted = compose.rgb;
-	oColor =  vec4(inverted, 1.0);
+	// vec4 mapNight = tMap * uMapNightColor;
+	// vec4 map  = mix(mapDay , mapNight, tTerminator.r );
+	//
+	// vec4 planesDay = tPlanes * uPlanesDayColor;
+	// vec4 planesNight = (1.0 - tPlanes) * uPlanesNightColor;
+	//
+	// vec4 planes = mix(planesNight, planesDay, tTerminator.r)  * planesNight.a;
+	//
+	//
+	// oColor =   vec4(compose.rgb, 1.0);
 }

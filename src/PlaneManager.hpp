@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include "cinder/Timer.h"
 
+#include "Settings.hpp"
 #include "Database.hpp"
 
 
@@ -20,6 +21,24 @@ namespace csys {
     class PlaneManager{
         
     public:
+        
+        
+        class PlaneManagerSettings : public csys::Settings{
+            
+        public:
+            int mSpeed = 100;
+            // stats
+            size_t unbornPlanes = 0;
+            size_t deadPlanes = 0;
+            size_t activePlanes = 0;
+            
+            void load() override;
+            void save() override;
+            void drawUi() override;
+            
+        };
+        
+        
         
         
         static PlaneManager& instance()
@@ -41,6 +60,8 @@ namespace csys {
             return mGlobalTime;
         }
         
+        
+        
         void setColorMap(const ci::Surface& surf){
             mColorMap = surf;
         }
@@ -55,17 +76,13 @@ namespace csys {
         
         ci::Timer mTimer;
         double mGlobalTime;
-        int mSpeed = 1;
         
         csys::Database mDatabase;
         
         std::map<std::string , csys::PlaneRef> mPlanesMap;
         std::vector<csys::PlaneRef> mSortedPlanes;
         
-        
-        // stats
-        size_t unbornPlanes = 0;
-        size_t deadPlanes = 0;
+        PlaneManagerSettings mSettings;
         
         //surface
         

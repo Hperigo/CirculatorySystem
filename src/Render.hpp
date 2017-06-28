@@ -33,7 +33,7 @@ namespace csys {
                 
             }
             // global
-            ci::ivec2 windowSize = {1580, 640};
+            ci::ivec2 windowSize = {1780, 840};
             
             
             //Plane Fbo
@@ -41,6 +41,11 @@ namespace csys {
             float maxSpeed = 10;
             float mapScale = 1.0f;
             float fadeAlpha = 0.1f;
+            
+            float pointSize = 1.0f;
+            
+            ci::vec2 LRCoord = {0.993f, 0.0f};
+            ci::vec2 ULCoord = {0.003f, 1.0f};
             
             
             ci::ColorA trailColorA {  1.0f, 1.0f, 1.0f, 0.9f };
@@ -67,10 +72,14 @@ namespace csys {
             ci::ColorA mapColor { 0.9f,0.3f, 0.3f, 0.9f };
             
             
+            float speedScale = -0.1;
+            
             void drawUi() override;
             
             void save() override;
             void load() override;
+            
+            bool doComposite = true;
             
             Render* mRender;
         };
@@ -88,6 +97,7 @@ namespace csys {
         
         // FBO's
         ci::gl::FboRef mPlanesFbo;
+        ci::gl::FboRef mPlanesEdgeBlend;
         
         // terminator
         ci::gl::FboRef mTerminatorFbo;
@@ -101,6 +111,7 @@ namespace csys {
         
         ci::gl::TextureRef mMapTexture;
         
+        ci::gl::GlslProgRef mDefaultShader;
         ci::gl::GlslProgRef mComposeShader;
         ci::gl::GlslProgRef mBlurShader;
 
@@ -109,6 +120,8 @@ namespace csys {
         void renderPlaneFbo();
         void renderTerminatorFbo();
         void renderBlurFbo();
+        
+        void renderPlaneEdgeBlend();
         void renderCompose();
         
         
@@ -116,6 +129,8 @@ namespace csys {
         
         bool doFirstClear = true;
         RenderSettings mSettings;
+        
+        std::vector<glm::vec2> dotsPosition;
         
     };
     

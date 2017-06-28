@@ -76,6 +76,10 @@ namespace csys {
             return lastUpdateTime;
         };
         
+        void setLastUpdateTime(uint64_t time){
+            lastUpdateTime = time;
+        }
+        
         float getNormalizedTime() const{
             return normalizedTime;
         };

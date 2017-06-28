@@ -49,11 +49,16 @@ namespace csys {
         
         ui::Spacing();
         ui::Checkbox("clear fbo" , &doClear);
-        ui::DragFloat("max speed", &maxSpeed);
-        //    ui::SliderFloat("scale", &mapScale, 0.0f, 10.0f);
-        ui::SliderFloat("Alpha clear", &fadeAlpha, 0.0f, 1.0f);
-        ui::ColorEdit4("trail A", &trailColorA[0]);
-        ui::ColorEdit4("trail B", &trailColorB[0]);
+        ui::Checkbox("Do composite" , &doComposite);
+//        ui::DragFloat("max speed", &maxSpeed);
+//        //    ui::SliderFloat("scale", &mapScale, 0.0f, 10.0f);
+//        ui::ColorEdit4("trail A", &trailColorA[0]);
+//        ui::ColorEdit4("trail B", &trailColorB[0]);
+        
+        
+        ui::DragFloat("Alpha clear", &fadeAlpha, 0.001f);
+
+        ui::DragFloat("Point size", &pointSize, 0.01f);
 
         ui::Spacing();
         ui::ColorEdit4("Map day tint", &mapDayTint[0]);
@@ -64,6 +69,7 @@ namespace csys {
         ui::ColorEdit4("Planes night tint", &planesNightTint[0]);
         
         ui::Dummy(ImVec2(0, 10));
+        
         
         //terminator
         if(ui::DragFloat("lat", &lat)){
@@ -84,12 +90,18 @@ namespace csys {
         
         ui::Dummy(ImVec2(0, 10));
         
+        ui::DragFloat2("LRCoord", &LRCoord[0]);
+        ui::DragFloat2("ULCoord", &ULCoord[0]);
+        
 //        ui::Checkbox("draw Map" , &drawMap);
 //        ui::Checkbox("draw Fbo" , &drawFbo);
 //        ui::ColorEdit4("map tint", &mapColor[0]);
         
         
+        ui::DragFloat("Earth rotation speed", &speedScale, 0.001f, -1.0f, 1.0f);
         
+        ui::Dummy(ImVec2(0, 10));
+
         auto store = ui::GetStateStorage();
         auto kvp = store->Data;
         
@@ -125,7 +137,7 @@ namespace csys {
             archive(doClear, maxSpeed, fadeAlpha,
                         trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
                         drawMap, mapColor,
-                        lat, lon, gamma, blurAmt);
+                        lat, lon, gamma, blurAmt, speedScale, pointSize);
             
         }catch(std::exception &e){
             
@@ -146,7 +158,7 @@ namespace csys {
             archive(doClear, maxSpeed, fadeAlpha,
                         trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
                         drawMap, mapColor,
-                        lat, lon, gamma, blurAmt);
+                        lat, lon, gamma, blurAmt, speedScale, pointSize);
             
             
         }catch(std::exception &e){
@@ -169,7 +181,8 @@ namespace csys {
         
         loadAssets();
         
-        auto texFmt = gl::Texture2d::Format().internalFormat( GL_RGBA16F );
+//        GL_RGBA16F
+        auto texFmt = gl::Texture2d::Format().internalFormat( GL_RGBA32F );
         texFmt.setWrap(GL_REPEAT, GL_REPEAT);
         
         auto fmt = gl::Fbo::Format();
@@ -177,14 +190,23 @@ namespace csys {
         fmt.setSamples(4);
         
         // FBO'S
-        mPlanesFbo = gl::Fbo::create( 2560, 1280 , fmt );
+        mPlanesFbo = gl::Fbo::create( 2160,1080 , fmt );
         
+
+        texFmt = gl::Texture2d::Format().internalFormat( GL_RGBA );
+        texFmt.setWrap(GL_REPEAT, GL_REPEAT);
+        
+        fmt = gl::Fbo::Format();
+        fmt.setColorTextureFormat( texFmt );
         fmt.setSamples(0);
-        mComposeFbo = gl::Fbo::create( 2560, 1280 , fmt );
+        
+        
+        mPlanesEdgeBlend = gl::Fbo::create(2160, 1080, fmt );
+        mComposeFbo = gl::Fbo::create( 2160,1080 , fmt );
         
         
         
-        auto t_size = vec2(1280, 640);
+        auto t_size = vec2(2160,1080) / 2.0f;
         
         mTerminatorFbo = gl::Fbo::create( t_size.x, t_size.y , fmt );
         mHorizontalFbo = gl::Fbo::create(t_size.x, t_size.y , fmt );
@@ -195,7 +217,7 @@ namespace csys {
     void Render::loadAssets(){
         
         try{
-            mMapTexture = gl::Texture::create(loadImage( loadAsset( "map_lat_long_2.jpg")));
+            mMapTexture = gl::Texture::create(loadImage( loadAsset( "map.jpg")));
             mMapTexture->setWrap(GL_REPEAT, GL_REPEAT);
 
             
@@ -208,6 +230,10 @@ namespace csys {
                                                .vertex( loadAsset("blurVertex.glsl"))
                                                .fragment(loadAsset("blurFrag.glsl")) );
             
+            
+            mDefaultShader = gl::GlslProg::create( gl::GlslProg::Format()
+                                                  .vertex( loadAsset("defaultVertex.glsl"))
+                                                  .fragment(loadAsset("defaultFrag.glsl")) );
             
         }catch(std::exception &e){
             
@@ -243,11 +269,15 @@ namespace csys {
         gl::ScopedModelMatrix m;
         gl::scale(mSettings.mapScale,mSettings.mapScale,1.0f);
         
-        gl::lineWidth(3.0f);
-        gl::begin(GL_LINES);
+        
+        gl::pointSize(mSettings.pointSize);
+        gl::begin(GL_POINTS);
         
         
         auto sortedPlanes =  PlaneManager::instance().getSortedPlanes();
+        
+//        dotsPosition.clear();
+        
         for(auto& plane : sortedPlanes){
             
             
@@ -273,35 +303,30 @@ namespace csys {
                 auto pixelDistance = glm::distance(pointA, pointB);
                 
 //                float colorFactor =  constrain(pixelDistance / mSettings.maxSpeed, 0.0f, 1.0f);
-                
+                //ColorA(1.0f, 0.3f, 0.3f, 1.0f);/
                 ColorA finalColor =  plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
                 
+//                finalColor.a = 0.6f;
                 
                 
+//                gl::color( finalColor );
+//                gl::vertex(pointA);
                 
-                if( geoDistance < 500 &&  pixelDistance < 300){
+                
+                if( geoDistance < 500){
                     
                     gl::color( finalColor );
                     gl::vertex(pointA);
-                    gl::color( finalColor );
-                    gl::vertex(pointB);
-                    
-//                    gl::color( finalColor );
-//                    gl::vertex(pointA-vec2(1));
-//                    gl::color( finalColor );
-//                    gl::vertex(pointB-vec2(1));
-                    
-//                    gl::color( finalColor );
-//                    gl::vertex(pointA-vec2(2));
-//                    gl::color( finalColor );
-//                    gl::vertex(pointB-vec2(2));
                     
                 }
                 
             }
             
         }
+        
         gl::end();
+
+
    
     }
     
@@ -407,6 +432,37 @@ namespace csys {
         
     }
     
+    void Render::renderPlaneEdgeBlend(){
+        
+        
+        auto size = mPlanesEdgeBlend->getSize();
+
+        
+        gl::ScopedFramebuffer f(mPlanesEdgeBlend);
+        gl::ScopedViewport v( size  );
+        gl::setMatricesWindow( size );
+        
+        gl::enableAlphaBlending();
+        
+        gl::GlslProgRef prog = gl::getStockShader( gl::ShaderDef().texture().color() );
+        
+        gl::ScopedGlslProg shader(prog);
+        
+        gl::clear( ColorA(0,0,0,0) );
+        
+        auto planes = mPlanesFbo->getColorTexture();
+
+        
+        planes->bind(0);
+        gl::drawSolidRect(Rectf(0,0,size.x, size.y), mSettings.ULCoord, mSettings.LRCoord  );
+        planes->unbind();
+        
+//
+        
+        gl::color(1.0f, 0.0f, 0.0f, 1.0f);
+        gl::drawSolidCircle( size / 2, 10 );
+    }
+    
     
     void Render::renderCompose(){
         
@@ -424,36 +480,103 @@ namespace csys {
         
         gl::color( Color::white() );
         
-        gl::ScopedGlslProg prog( mComposeShader );
+        
+        if(mSettings.doComposite){
+            gl::ScopedGlslProg prog( mComposeShader );
+
+            
+            mMapTexture->bind(0);
+
+            auto planesTexture = mPlanesEdgeBlend->getColorTexture();
+            planesTexture->bind(1);
+            
+            auto terminatorTexture = mVerticalFbo->getColorTexture();
+            terminatorTexture->bind(2);
+            
+            mComposeShader->uniform("uTexPlanes", 1);
+            mComposeShader->uniform("uTexTerminator", 2);
+            mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * mSettings.speedScale );
+            
+            // --- Colors
+            // Map
+            mComposeShader->uniform("uMapDayColor", mSettings.mapDayTint);
+            mComposeShader->uniform("uMapNightColor", mSettings.mapNightTint);
+            
+            mComposeShader->uniform("uPlanesDayColor", mSettings.planesDayTint);
+            mComposeShader->uniform("uPlanesNightColor", mSettings.planesNightTint);
+            
+//            &upperLeftTexCoord = vec2( 0, 1 ), const vec2 &lowerRightTexCoord = vec2( 1, 0 )
+            
+            gl::drawSolidRect(Rectf(0,0,size.x, size.y), vec2( 0, 1 ), vec2(1.0f, 0.0f)  );
+            
+            
+//            gl::color(1.0f, 0.0f, 0.0f, 1.0f);
+//            gl::begin(GL_TRIANGLE_STRIP);
+//            
+//            gl::texCoord(0, 1);
+//            gl::vertex(0, size.y);
+//            
+//            gl::texCoord(1, 1);
+//            gl::vertex(size.x, size.y);
+//            
+//            gl::texCoord(1, 0);
+//            gl::vertex(size.x, 0);
+//            
+//            gl::texCoord(0, 1);
+//            gl::vertex(0, size.y);
+//            
+//            gl::texCoord(0, 0);
+//            gl::vertex(0, 0);
+//            
+//            gl::texCoord(1, 0);
+//            gl::vertex(size.x, 0);
+//            gl::end();
+            
+
+
+            
+            mMapTexture->unbind();
+            planesTexture->unbind();
+            terminatorTexture->unbind();
+            
+        }else{
+            gl::ScopedGlslProg prog( mDefaultShader );
+
+            mDefaultShader->uniform("uTexPlanes", 1);
+            mDefaultShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * mSettings.speedScale );
+            mDefaultShader->uniform("uMapColor", mSettings.mapNightTint);
+
+            auto planesTexture = mPlanesFbo->getColorTexture();
+            mMapTexture->bind(0);
+            planesTexture->bind(1);
+            
+            gl::drawSolidRect(Rectf(0,0,size.x, size.y) );
+            
+            mMapTexture->unbind();
+            planesTexture->unbind();
+
+        }
+//
         
         
-        mMapTexture->bind(0);
+/*
+        gl::color( Color::white() );
+        gl::enableAdditiveBlending();
+        gl::begin(GL_POINTS);
+        gl::pointSize(2.0f);
+        const float c = 0.6f;
+        for(auto& dot : dotsPosition){
         
-        auto planesTexture = mPlanesFbo->getColorTexture();
-        planesTexture->bind(1);
+
+            gl::color(c, c, c, c);
+            gl::vertex( dot );
+            
+        }
         
-        auto terminatorTexture = mVerticalFbo->getColorTexture();
-        terminatorTexture->bind(2);
-        
-        mComposeShader->uniform("uTexPlanes", 1);
-        mComposeShader->uniform("uTexTerminator", 2);
-        mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * -0.0f );
-        
-        // --- Colors
-        // Map
-        mComposeShader->uniform("uMapDayColor", mSettings.mapDayTint);
-        mComposeShader->uniform("uMapNightColor", mSettings.mapNightTint);
-        
-        mComposeShader->uniform("uPlanesDayColor", mSettings.planesDayTint);
-        mComposeShader->uniform("uPlanesNightColor", mSettings.planesNightTint);
-        
-        gl::drawSolidRect(Rectf(0,0,size.x, size.y) );
-        
-        
-        mMapTexture->unbind();
-        planesTexture->unbind();
-        terminatorTexture->unbind();
-        
+        gl::end();
+        gl::enableAlphaBlending();
+        gl::color( Color::white() );
+ */
     }
     
 }

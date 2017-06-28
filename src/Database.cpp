@@ -61,7 +61,6 @@ namespace csys {
         newPos.x = atof( jsonData["lat"].getValue<std::string>().c_str() ) ;
         newPos.y = atof( jsonData["lon"].getValue<std::string>().c_str() ) ;
         
-
         
         auto found = mPlanes.find( id );
 
@@ -132,7 +131,6 @@ namespace csys {
         // make positions array insert full postion vector
         
         document doc {};
-//        doc << bsoncxx::builder::concatenate( bsoncxx::from_json( plane->getInfo()->serialize() ) );
 
         std::int64_t now = std::time(nullptr);
         doc << "creationTime" << now;
@@ -228,17 +226,28 @@ namespace csys {
                 mongocxx::uri uri("mongodb://127.0.0.1:27017");
                 auto client = mongocxx::client(uri);
                 
-                auto db  = client["csys"];
+                auto db  = client["csys4"];
                 auto colllection = db["Planes"];
                 
                 mongocxx::cursor cursor = colllection.find(doc.view());
                 
-                
-                
+                int deltaErrorCount = 0;
                 for(auto&& d : cursor){
+                    auto plane = std::make_shared<csys::Plane>( d["id"].get_utf8().value.to_string(), d );
                     
-                    docs.push_back( std::make_shared<csys::Plane>( d["id"].get_utf8().value.to_string(), d ));
+                    int delta = plane->getLastUpdateTime() - plane->getCreationTime();
+                    
+                    if(delta < 1200){
+                        //plane->setLastUpdateTime(plane->getLastUpdateTime() + 3000 );
+//                        CI_LOG_E("delta = 0");
+                        deltaErrorCount++;
+                    }else{
+                        docs.push_back( plane );
+                    }
+                    
                 }
+                
+                CI_LOG_I("Number of time delta errors: "  << deltaErrorCount );
                 
                 
             }catch(std::exception &e){
@@ -250,7 +259,6 @@ namespace csys {
             return docs;
 
         });
-        
         
        mQueries.push_back(result);
     }

@@ -14,6 +14,10 @@
 #include "cinder/Log.h"
 #include "CinderImGui.h"
 
+#include "CinderCereal.h"
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
+
 namespace csys {
     
     using bsoncxx::builder::stream::close_array;
@@ -23,6 +27,69 @@ namespace csys {
     using bsoncxx::builder::stream::open_array;
     using bsoncxx::builder::stream::open_document;
 
+    
+    
+    void PlaneManager::PlaneManagerSettings::load(){
+        
+        
+        try{
+            
+            auto path = ci::app::getAssetPath("").string() + "/out.json";
+            std::ifstream inFile(path);
+            cereal::JSONInputArchive archive(inFile);
+            
+            CI_LOG_I("loading...");
+            archive(mSpeed);
+            
+            
+        }catch(std::exception &e){
+            
+            CI_LOG_EXCEPTION("Error loading: ", e );
+            
+        }
+    }
+    
+    void PlaneManager::PlaneManagerSettings::save(){
+        
+        try{
+            auto path = ci::app::getAssetPath("").string() + "/out.json";
+            
+            std::ofstream outFile(path);
+            cereal::JSONOutputArchive archive(outFile);
+            
+            CI_LOG_I("Saving...");
+            
+            archive(mSpeed);
+            
+        }catch(std::exception &e){
+            
+            CI_LOG_EXCEPTION("Error saving: ", e);
+        }
+
+        
+    }
+    
+    void PlaneManager::PlaneManagerSettings::drawUi(){
+        
+        
+        ui::LabelText(std::to_string(unbornPlanes).c_str(), "unborn: ");
+        ui::LabelText(std::to_string(deadPlanes).c_str(), "dead: ");
+        ui::LabelText(std::to_string(activePlanes).c_str(), "active: ");
+        
+        
+        ui::Spacing();
+        //                ui::LabelText(std::to_string(mGlobalTime).c_str(), "global time: ");
+        
+        ui::SliderInt("speed", &mSpeed, 1, 1000);
+        
+        if(ui::Button("Save")){
+            save();
+        }
+        if(ui::Button("Load")){
+            load();
+        }
+    }
+    
     
     // DB mode
     void PlaneManager::initFromDB(){
@@ -88,12 +155,14 @@ namespace csys {
     void PlaneManager::update(){
         
     
-        mGlobalTime = mTimer.getSeconds() * mSpeed;
+        mGlobalTime = mTimer.getSeconds() * mSettings.mSpeed;
         if(mGlobalTime > (mEndTime - mInitialTime) ){
             mTimer.start();
         }
-        unbornPlanes = 0;
-        deadPlanes = 0;
+        
+        mSettings.unbornPlanes = 0;
+        mSettings.deadPlanes = 0;
+        mSettings.activePlanes = 0;
         
         for(auto& plane : mSortedPlanes){
             
@@ -105,11 +174,11 @@ namespace csys {
             // check if plane exists in our time frame
             if( mGlobalTime < planeIntialTime){
                 plane->setActive(false);
-                unbornPlanes++;
+                mSettings.unbornPlanes++;
                 continue;
             }else if(mGlobalTime > planeEndTime){
                 plane->setActive(false);
-                deadPlanes++;
+                mSettings.deadPlanes++;
                 continue;
             }
         
@@ -126,25 +195,22 @@ namespace csys {
                 auto pos =  geo::latLongToCartesian(mColorMap.getSize(), plane->getPositions()[0] );
                 
                 ci::ColorA col =  mColorMap.getPixel( pos );
+//                col.a = 0.5f;
                 
                 plane->setInitialColor(col);
             }
             
             plane->setActive(true);
             plane->normalizedTime = (mGlobalTime - planeIntialTime) / deltaTime;
-            
+            mSettings.activePlanes++;
         }// eo-for
         
     }
     
     
     void PlaneManager::drawUi(){
-        
-        ui::LabelText(std::to_string(unbornPlanes).c_str(), "unborn: ");
-        ui::LabelText(std::to_string(deadPlanes).c_str(), "dead: ");
-        
-        ui::SliderInt("speed", &mSpeed, 1, 10000);
-        
+
+        mSettings.drawUi();
     }
     
     
