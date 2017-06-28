@@ -57,6 +57,9 @@ class CirculatorySysApp : public App {
     void update() override;
     void updateFromQuery();
     void updateFromDB();
+    
+    
+    void manageFullScreen(bool toogle);
 
     
     CameraPersp			_CameraDebug;
@@ -110,7 +113,9 @@ class CirculatorySysApp : public App {
             ui::Checkbox("Start Fullscreen", &startFullScreen);
             if(ui::Button("Set Fullscreen")){
                 app = (CirculatorySysApp*) app::App::get();
-                app->setFullScreen( !app->isFullScreen() );
+//                app->setFullScreen( !app->isFullScreen() );
+                app->manageFullScreen(!app->isFullScreen() );
+                
             }
             
             if(ui::Button("Save")){
@@ -285,6 +290,21 @@ void CirculatorySysApp::setup()
     }
 }
 
+
+void CirculatorySysApp::manageFullScreen(bool toogle){
+    
+    setFullScreen(toogle);
+    
+    if(toogle == true){
+        hideCursor();
+    }
+    else{
+        showCursor();
+    }
+    
+    
+}
+
 void CirculatorySysApp::mouseDown( MouseEvent event )
 {
  
@@ -300,7 +320,7 @@ void CirculatorySysApp::mouseMove( MouseEvent event )
 void CirculatorySysApp::keyUp(cinder::app::KeyEvent event){
     
     if(event.getChar() == 'f' ){
-        setFullScreen( !isFullScreen() );
+        manageFullScreen( !isFullScreen() );
     }
     
 }
@@ -430,7 +450,7 @@ void CirculatorySysApp::draw()
     
         // DRAW UI ----------
         {
-            ui::ScopedWindow w("General");
+            ui::ScopedWindow w("Geral");
             ui::LabelText(to_string(getAverageFps()).c_str(), "FPS: ");
             mMainSettings.drawUi();
         }

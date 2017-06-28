@@ -60,13 +60,14 @@ namespace csys {
 
         ui::DragFloat("Point size", &pointSize, 0.01f);
 
-        ui::Spacing();
-        ui::ColorEdit4("Map day tint", &mapDayTint[0]);
-        ui::ColorEdit4("Map night tint", &mapNightTint[0]);
+        ui::Dummy(ImVec2(0, 10));
+//        ui::ColorEdit4("Map day tint", &mapDayTint[0]);
+        ui::DragFloat("Map Color", &mapDayTint[0], 0.01f);
         
-        
-        ui::ColorEdit4("Planes day tint", &planesDayTint[0]);
-        ui::ColorEdit4("Planes night tint", &planesNightTint[0]);
+//        ui::ColorEdit4("Map night tint", &mapNightTint[0]);
+//        
+//        ui::ColorEdit4("Planes day tint", &planesDayTint[0]);
+//        ui::ColorEdit4("Planes night tint", &planesNightTint[0]);
         
         ui::Dummy(ImVec2(0, 10));
         
@@ -90,8 +91,8 @@ namespace csys {
         
         ui::Dummy(ImVec2(0, 10));
         
-        ui::DragFloat2("LRCoord", &LRCoord[0]);
-        ui::DragFloat2("ULCoord", &ULCoord[0]);
+//        ui::DragFloat2("LRCoord", &LRCoord[0]);
+//        ui::DragFloat2("ULCoord", &ULCoord[0]);
         
 //        ui::Checkbox("draw Map" , &drawMap);
 //        ui::Checkbox("draw Fbo" , &drawFbo);

@@ -27,7 +27,7 @@ void main( void )
 	vec4 tTerminator    = texture( uTexTerminator, TexCoord.st);
 
 
-	vec4 map = tMap * uMapDayColor;
+	vec4 map = tMap * uMapDayColor.r;
 
 	vec4 compose =  mix(map, tPlanes, tPlanes.a);
 	oColor =   vec4( compose.rgb , 1.0);
