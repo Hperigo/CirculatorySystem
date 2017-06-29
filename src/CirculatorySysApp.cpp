@@ -144,7 +144,7 @@ class CirculatorySysApp : public App {
             app = (CirculatorySysApp*) app::App::get();
             
             try{
-                auto path = app::getAssetPath("").string() + "/out_main.json";
+                auto path = getResourcePath("out_main.json").string();
                 
                 std::ofstream outFile(path);
                 cereal::JSONOutputArchive archive(outFile);
@@ -164,7 +164,7 @@ class CirculatorySysApp : public App {
             
             try{
                 
-                auto path = app::getAssetPath("").string() + "/out_main.json";
+                auto path = getResourcePath("out_main.json").string();
                 std::ifstream inFile(path);
                 cereal::JSONInputArchive archive(inFile);
                 
@@ -229,7 +229,7 @@ void CirculatorySysApp::setup()
     mPlaneManager = &csys::PlaneManager::instance();
     mPlaneManager->initFromDB();
     
-    mPlaneManager->setColorMap(  loadImage(loadAsset("color_map.png"))  );
+    mPlaneManager->setColorMap(  loadImage(loadResource("color_map.png"))  );
     
     
     getWindow()->setSize(mSettings->windowSize);
@@ -243,7 +243,7 @@ void CirculatorySysApp::setup()
 
     if( doQuery ){
         
-        auto keyBuffer = loadAsset( "initcommand.cskey" )->getBuffer();
+        auto keyBuffer = loadResource( "initcommand.cskey" )->getBuffer();
         std::string keyString = std::string( static_cast<char *>( keyBuffer->getData() ), keyBuffer->getSize() ) + "\n";
         
         

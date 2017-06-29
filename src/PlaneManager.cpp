@@ -34,7 +34,7 @@ namespace csys {
         
         try{
             
-            auto path = ci::app::getAssetPath("").string() + "/out.json";
+            auto path = cinder::app::getResourcePath("out.json").string();
             std::ifstream inFile(path);
             cereal::JSONInputArchive archive(inFile);
             
@@ -52,7 +52,8 @@ namespace csys {
     void PlaneManager::PlaneManagerSettings::save(){
         
         try{
-            auto path = ci::app::getAssetPath("").string() + "/out.json";
+            
+            auto path = cinder::app::getResourcePath("out.json").string();;
             
             std::ofstream outFile(path);
             cereal::JSONOutputArchive archive(outFile);

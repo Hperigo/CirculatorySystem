@@ -128,7 +128,11 @@ namespace csys {
         
         
         try{
-           auto path = getAssetPath("").string() + "/out.json";
+//           auto path = getAssetPath("").string() + "/out.json";
+            
+            auto path = getResourcePath("out.json").string();
+            
+            console() << path << std::endl;
             
             std::ofstream outFile(path);
             cereal::JSONOutputArchive archive(outFile);
@@ -151,7 +155,10 @@ namespace csys {
         
         try{
            
-            auto path = getAssetPath("").string() + "/out.json";
+            auto path = getResourcePath("out.json").string();
+            
+            console() << path << std::endl;
+            
             std::ifstream inFile(path);
             cereal::JSONInputArchive archive(inFile);
             
@@ -218,23 +225,23 @@ namespace csys {
     void Render::loadAssets(){
         
         try{
-            mMapTexture = gl::Texture::create(loadImage( loadAsset( "map.jpg")));
+            mMapTexture = gl::Texture::create(loadImage( loadResource( "map.jpg")));
             mMapTexture->setWrap(GL_REPEAT, GL_REPEAT);
 
             
             mComposeShader = gl::GlslProg::create( gl::GlslProg::Format()
-                                                  .vertex( loadAsset("composeVertex.glsl"))
-                                                  .fragment(loadAsset("composeFrag.glsl")) );
+                                                  .vertex( loadResource("composeVertex.glsl"))
+                                                  .fragment(loadResource("composeFrag.glsl")) );
             
             
             mBlurShader = gl::GlslProg::create( gl::GlslProg::Format()
-                                               .vertex( loadAsset("blurVertex.glsl"))
-                                               .fragment(loadAsset("blurFrag.glsl")) );
+                                               .vertex( loadResource("blurVertex.glsl"))
+                                               .fragment(loadResource("blurFrag.glsl")) );
             
             
             mDefaultShader = gl::GlslProg::create( gl::GlslProg::Format()
-                                                  .vertex( loadAsset("defaultVertex.glsl"))
-                                                  .fragment(loadAsset("defaultFrag.glsl")) );
+                                                  .vertex( loadResource("defaultVertex.glsl"))
+                                                  .fragment(loadResource("defaultFrag.glsl")) );
             
         }catch(std::exception &e){
             
