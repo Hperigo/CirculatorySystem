@@ -61,21 +61,18 @@ namespace csys {
         ui::DragFloat("Point size", &pointSize, 0.01f);
 
         ui::Dummy(ImVec2(0, 10));
-//        ui::ColorEdit4("Map day tint", &mapDayTint[0]);
-        ui::DragFloat("Map Color", &mapDayTint[0], 0.01f);
+
+        ui::DragFloat("Map Day Color", &mapDayTint[0], 0.01f);
+        ui::DragFloat("Map Night Color", &mapNightTint[0], 0.01f);
         
-//        ui::ColorEdit4("Map night tint", &mapNightTint[0]);
-//        
-//        ui::ColorEdit4("Planes day tint", &planesDayTint[0]);
-//        ui::ColorEdit4("Planes night tint", &planesNightTint[0]);
         
         ui::Dummy(ImVec2(0, 10));
         
         
         //terminator
-        if(ui::DragFloat("lat", &lat)){
-            Render::terminatorNeedsRedraw = true;
-        }
+//        if(ui::DragFloat("lat", &lat)){
+//            Render::terminatorNeedsRedraw = true;
+//        }
         if(ui::DragFloat("lon", &lon)){
             Render::terminatorNeedsRedraw = true;
         }

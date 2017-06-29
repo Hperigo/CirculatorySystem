@@ -26,11 +26,12 @@ void main( void )
 	vec4 tPlanes 		= texture( uTexPlanes, texCood );
 	vec4 tTerminator    = texture( uTexTerminator, TexCoord.st);
 
-
-	vec4 map = tMap * uMapDayColor.r;
+	vec4 mapDayColor = tMap * uMapDayColor.r;
+	vec4 mapNightColor = tMap * uMapNightColor.r;
+	vec4 map =  mix(mapDayColor, mapNightColor, tTerminator.r); //tMap * uMapDayColor.r;
 
 	vec4 compose =  mix(map, tPlanes, tPlanes.a);
-	oColor =   vec4( compose.rgb , 1.0);
+	oColor =  compose; // vec4( compose.rgb , 1.0);
 
 
 	// vec4 mapNight = tMap * uMapNightColor;

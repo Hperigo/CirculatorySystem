@@ -60,9 +60,9 @@ namespace csys {
             
             
             // Terminator Fbo
-            float lat;
-            float lon;
-            float gamma;
+            float lat = 0.0f;
+            float lon = 0.0f;
+            float gamma = 7.0f;
             float blurAmt = 1.0f;
             
             
