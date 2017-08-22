@@ -34,11 +34,10 @@ namespace csys {
         
         try{
             
-            auto path = cinder::app::getResourcePath("out.json").string();
+            auto path = cinder::app::getResourcePath("out_plane.json").string();
             std::ifstream inFile(path);
             cereal::JSONInputArchive archive(inFile);
             
-            CI_LOG_I("loading...");
             archive(mSpeed);
             
             
@@ -53,12 +52,10 @@ namespace csys {
         
         try{
             
-            auto path = cinder::app::getResourcePath("out.json").string();;
+            auto path = cinder::app::getResourcePath("out_plane.json").string();;
             
             std::ofstream outFile(path);
             cereal::JSONOutputArchive archive(outFile);
-            
-            CI_LOG_I("Saving...");
             
             archive(mSpeed);
             
@@ -81,7 +78,7 @@ namespace csys {
         ui::Spacing();
         //                ui::LabelText(std::to_string(mGlobalTime).c_str(), "global time: ");
         
-        ui::SliderInt("speed", &mSpeed, 1, 1000);
+        ui::SliderInt("speed", &mSpeed, 1, 5000);
         
         if(ui::Button("Save")){
             save();
@@ -129,9 +126,12 @@ namespace csys {
             mInitialTime = calculateInitialTime();
             mEndTime     = calculateEndTime();
             
+            ci::app::console() << mInitialTime << std::endl;
+            ci::app::console() << mEndTime << std::endl;
+            
         });
         
-        
+        mSettings.load();
         mTimer.start();
     }
     
@@ -160,6 +160,9 @@ namespace csys {
         if(mGlobalTime > (mEndTime - mInitialTime) ){
             mTimer.start();
         }
+        
+        mTimePercentage = mGlobalTime / (mEndTime - mInitialTime);
+
         
         mSettings.unbornPlanes = 0;
         mSettings.deadPlanes = 0;

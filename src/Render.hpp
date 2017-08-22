@@ -65,14 +65,12 @@ namespace csys {
             float gamma = 7.0f;
             float blurAmt = 1.0f;
             
+            float terminatorOffset = -0.550;
             
             //Main render
             bool drawMap = true;
             bool drawFbo = true;
             ci::ColorA mapColor { 0.9f,0.3f, 0.3f, 0.9f };
-            
-            
-            float speedScale = -0.1;
             
             void drawUi() override;
             

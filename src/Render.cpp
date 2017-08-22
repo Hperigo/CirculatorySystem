@@ -56,7 +56,10 @@ namespace csys {
 //        ui::ColorEdit4("trail B", &trailColorB[0]);
         
         
-        ui::DragFloat("Alpha clear", &fadeAlpha, 0.001f);
+        ui::DragFloat("Alpha clear", &fadeAlpha, 0.0001f, 0.0f, 1.0f, "%.5f");
+        
+        
+        
 
         ui::DragFloat("Point size", &pointSize, 0.01f);
 
@@ -83,21 +86,9 @@ namespace csys {
         if(ui::DragFloat("Blur Amt", &blurAmt)){
             Render::terminatorNeedsRedraw = true;
         }
+        
+        ui::DragFloat("Terminator offset", &terminatorOffset, 0.01f);
 
-        
-        
-        ui::Dummy(ImVec2(0, 10));
-        
-//        ui::DragFloat2("LRCoord", &LRCoord[0]);
-//        ui::DragFloat2("ULCoord", &ULCoord[0]);
-        
-//        ui::Checkbox("draw Map" , &drawMap);
-//        ui::Checkbox("draw Fbo" , &drawFbo);
-//        ui::ColorEdit4("map tint", &mapColor[0]);
-        
-        
-        ui::DragFloat("Earth rotation speed", &speedScale, 0.001f, -1.0f, 1.0f);
-        
         ui::Dummy(ImVec2(0, 10));
 
         auto store = ui::GetStateStorage();
@@ -139,7 +130,7 @@ namespace csys {
             archive(doClear, maxSpeed, fadeAlpha,
                         trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
                         drawMap, mapColor,
-                        lat, lon, gamma, blurAmt, speedScale, pointSize);
+                        lat, lon, gamma, blurAmt, pointSize, terminatorOffset);
             
         }catch(std::exception &e){
             
@@ -163,7 +154,7 @@ namespace csys {
             archive(doClear, maxSpeed, fadeAlpha,
                         trailColorA, trailColorB, mapDayTint, mapNightTint, planesDayTint, planesNightTint,
                         drawMap, mapColor,
-                        lat, lon, gamma, blurAmt, speedScale, pointSize);
+                        lat, lon, gamma, blurAmt, pointSize, terminatorOffset);
             
             
         }catch(std::exception &e){
@@ -309,7 +300,7 @@ namespace csys {
                 
 //                float colorFactor =  constrain(pixelDistance / mSettings.maxSpeed, 0.0f, 1.0f);
                 //ColorA(1.0f, 0.3f, 0.3f, 1.0f);/
-                ColorA finalColor =  plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
+                ColorA finalColor = plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
                 
 //                finalColor.a = 0.6f;
                 
@@ -318,7 +309,7 @@ namespace csys {
 //                gl::vertex(pointA);
                 
                 
-                if( geoDistance < 500){
+                if( geoDistance < 1000){
                     
                     gl::color( finalColor );
                     gl::vertex(pointA);
@@ -378,8 +369,8 @@ namespace csys {
         
         gl::drawSolid(terminatorPath);
         
-        gl::drawSolidCircle(p2, 10);
-        gl::drawSolidCircle(p1, 10);
+//        gl::drawSolidCircle(p2, 10);
+//        gl::drawSolidCircle(p1, 10);
         
         gl::enableAlphaBlending();
         
@@ -462,14 +453,14 @@ namespace csys {
         gl::drawSolidRect(Rectf(0,0,size.x, size.y), mSettings.ULCoord, mSettings.LRCoord  );
         planes->unbind();
         
-//
-        
         gl::color(1.0f, 0.0f, 0.0f, 1.0f);
-        gl::drawSolidCircle( size / 2, 10 );
     }
     
     
     void Render::renderCompose(){
+        
+        
+        
         
         auto size = mComposeFbo->getSize();
         
@@ -500,7 +491,10 @@ namespace csys {
             
             mComposeShader->uniform("uTexPlanes", 1);
             mComposeShader->uniform("uTexTerminator", 2);
-            mComposeShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * mSettings.speedScale );
+
+            mComposeShader->uniform("uTime", float(PlaneManager::instance().getPercentageTime()));
+            
+            mComposeShader->uniform("offset", mSettings.terminatorOffset);
             
             // --- Colors
             // Map
@@ -509,36 +503,10 @@ namespace csys {
             
             mComposeShader->uniform("uPlanesDayColor", mSettings.planesDayTint);
             mComposeShader->uniform("uPlanesNightColor", mSettings.planesNightTint);
-            
-//            &upperLeftTexCoord = vec2( 0, 1 ), const vec2 &lowerRightTexCoord = vec2( 1, 0 )
-            
-            gl::drawSolidRect(Rectf(0,0,size.x, size.y), vec2( 0, 1 ), vec2(1.0f, 0.0f)  );
-            
-            
-//            gl::color(1.0f, 0.0f, 0.0f, 1.0f);
-//            gl::begin(GL_TRIANGLE_STRIP);
-//            
-//            gl::texCoord(0, 1);
-//            gl::vertex(0, size.y);
-//            
-//            gl::texCoord(1, 1);
-//            gl::vertex(size.x, size.y);
-//            
-//            gl::texCoord(1, 0);
-//            gl::vertex(size.x, 0);
-//            
-//            gl::texCoord(0, 1);
-//            gl::vertex(0, size.y);
-//            
-//            gl::texCoord(0, 0);
-//            gl::vertex(0, 0);
-//            
-//            gl::texCoord(1, 0);
-//            gl::vertex(size.x, 0);
-//            gl::end();
-            
 
-
+            
+            gl::drawSolidRect(Rectf(0,0,size.x, size.y), vec2( 0, 1 ), vec2(1.f, 0.0f)  );
+        
             
             mMapTexture->unbind();
             planesTexture->unbind();
@@ -548,7 +516,7 @@ namespace csys {
             gl::ScopedGlslProg prog( mDefaultShader );
 
             mDefaultShader->uniform("uTexPlanes", 1);
-            mDefaultShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * mSettings.speedScale );
+//            mDefaultShader->uniform("uTime", float(ci::app::getElapsedSeconds()) * mSettings.speedScale );
             mDefaultShader->uniform("uMapColor", mSettings.mapNightTint);
 
             auto planesTexture = mPlanesFbo->getColorTexture();
@@ -561,27 +529,6 @@ namespace csys {
             planesTexture->unbind();
 
         }
-//
-        
-        
-/*
-        gl::color( Color::white() );
-        gl::enableAdditiveBlending();
-        gl::begin(GL_POINTS);
-        gl::pointSize(2.0f);
-        const float c = 0.6f;
-        for(auto& dot : dotsPosition){
-        
-
-            gl::color(c, c, c, c);
-            gl::vertex( dot );
-            
-        }
-        
-        gl::end();
-        gl::enableAlphaBlending();
-        gl::color( Color::white() );
- */
     }
     
 }

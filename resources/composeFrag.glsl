@@ -7,6 +7,7 @@ uniform sampler2D uTexPlanes;
 uniform sampler2D uTexTerminator;
 
 uniform float uTime;
+uniform float offset;
 
 // Map
 uniform vec4 uMapDayColor;
@@ -20,11 +21,11 @@ in vec2	TexCoord;
 void main( void )
 {
 
-	vec2 texCood = TexCoord.st 	+ vec2(uTime, 0.0);
+	vec2 texCood = TexCoord.st 	+ vec2(-uTime, 0.0);
 
 	vec4 tMap           =  texture( uTexMap, texCood );
 	vec4 tPlanes 		= texture( uTexPlanes, texCood );
-	vec4 tTerminator    = texture( uTexTerminator, TexCoord.st);
+	vec4 tTerminator    = texture( uTexTerminator, TexCoord.st + vec2(offset, 0.0));
 
 	vec4 mapDayColor = tMap * uMapDayColor.r;
 	vec4 mapNightColor = tMap * uMapNightColor.r;

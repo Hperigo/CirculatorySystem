@@ -59,7 +59,10 @@ namespace csys {
         double getGlobalTime() const {
             return mGlobalTime;
         }
-        
+
+        double getPercentageTime() const {
+            return mTimePercentage;
+        }
         
         
         void setColorMap(const ci::Surface& surf){
@@ -69,7 +72,12 @@ namespace csys {
         std::map<std::string , csys::PlaneRef>& getPlanes() { return mPlanesMap; }
         std::vector<csys::PlaneRef>& getSortedPlanes() { return mSortedPlanes; }
         
+        
+        
+        
     private:
+        
+        double mTimePercentage = 0.0f;
         
         std::time_t mInitialTime;
         std::time_t mEndTime;

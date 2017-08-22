@@ -24,6 +24,7 @@ namespace csys{
         
         virtual void save() = 0;
         virtual void load() = 0;
+
     };
     
     typedef std::shared_ptr<Settings> SettingsRef;
