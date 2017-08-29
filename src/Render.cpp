@@ -50,7 +50,7 @@ namespace csys {
         ui::Spacing();
         ui::Checkbox("clear fbo" , &doClear);
         ui::Checkbox("Do composite" , &doComposite);
-//        ui::DragFloat("max speed", &maxSpeed);
+        ui::DragFloat("max speed", &maxSpeed, 0.00001f, 0.0f, 1.0f, "%.5f");
 //        //    ui::SliderFloat("scale", &mapScale, 0.0f, 10.0f);
 //        ui::ColorEdit4("trail A", &trailColorA[0]);
 //        ui::ColorEdit4("trail B", &trailColorB[0]);
@@ -186,7 +186,8 @@ namespace csys {
         fmt.setSamples(4);
         
         // FBO'S
-        mPlanesFbo = gl::Fbo::create( 2160,1080 , fmt );
+//        mPlanesFbo = gl::Fbo::create( 2160,1080 , fmt );
+        mPlanesFbo = gl::Fbo::create( size.x,size.y , fmt );
         
 
         texFmt = gl::Texture2d::Format().internalFormat( GL_RGBA );
@@ -197,12 +198,12 @@ namespace csys {
         fmt.setSamples(0);
         
         
-        mPlanesEdgeBlend = gl::Fbo::create(2160, 1080, fmt );
-        mComposeFbo = gl::Fbo::create( 2160,1080 , fmt );
+        mPlanesEdgeBlend = gl::Fbo::create(size.x,size.y, fmt );
+        mComposeFbo = gl::Fbo::create( size.x,size.y , fmt );
         
         
         
-        auto t_size = vec2(2160,1080) / 2.0f;
+        auto t_size = vec2(size) / 2.0f;
         
         mTerminatorFbo = gl::Fbo::create( t_size.x, t_size.y , fmt );
         mHorizontalFbo = gl::Fbo::create(t_size.x, t_size.y , fmt );
@@ -213,7 +214,7 @@ namespace csys {
     void Render::loadAssets(){
         
         try{
-            mMapTexture = gl::Texture::create(loadImage( loadResource( "map.jpg")));
+            mMapTexture = gl::Texture::create(loadImage( loadResource( "map.png")));
             mMapTexture->setWrap(GL_REPEAT, GL_REPEAT);
 
             
@@ -274,54 +275,93 @@ namespace csys {
         
 //        dotsPosition.clear();
         
+        
+//        int index = 0;
         for(auto& plane : sortedPlanes){
             
             
             if(!plane->isActive()){
                 continue;
             }
+        
             
-            auto positions = plane->getPositions();
-            float normalizedIndex = ci::constrain<float>(   plane->getNormalizedTime() *  (positions.size() - 1 ), 0, positions.size() - 1 );
+            auto filteredPositions = plane->getFilteredPositions();
+            
+            if( filteredPositions.size() == 0 ){
+                continue;
+            }
+            
+            /*
+                ci::app::console() << "Normalized time: " << plane->getNormalizedTime() << "\n";
+                ci::app::console() << "filtered pos size: " << filteredPositions.size() << "\n";
+                ci::app::console() << "index: " << index << "\n";
+                ci::app::console() << "plane: " << plane->getKey() << "\n";
+                index++;
+            */
+
+
+            
+            float normalizedIndex = ci::constrain<float>(   plane->getNormalizedTime() *  (filteredPositions.size() - 1 ), 0, filteredPositions.size() - 1 );
+            
+
+            ColorA finalColor = plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
+            
+            ci::vec2 pointA = vectorLerp(filteredPositions, normalizedIndex);
+            gl::color( finalColor );
+            gl::vertex(pointA);
             
             
-            
-            if(normalizedIndex > 1){
+            if(normalizedIndex){
                 
                 
-                auto latA = vectorLerp(positions, normalizedIndex);
-                auto pointA = csys::geo::latLongToCartesian(  size , latA);
+//                auto latA = vectorLerp(positions, normalizedIndex);
+//                auto pointA = csys::geo::latLongToCartesian(  size , latA);
+//                
+//                auto latB = vectorLerp(positions, normalizedIndex - 1);
+//                auto pointB = csys::geo::latLongToCartesian( size , latB);
+//                
+//                auto geoDistance = csys::geo::distanceLatLong(latA, latB);
+//                auto pixelDistance = glm::distance(pointA, pointB);
+//                
+////                float colorFactor =  constrain(pixelDistance / mSettings.maxSpeed, 0.0f, 1.0f);
+//                //ColorA(1.0f, 0.3f, 0.3f, 1.0f);/
+//                ColorA finalColor = plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
+//                
+////                finalColor.a = 0.6f;
+//                
+//                
+////                gl::color( finalColor );
+////                gl::vertex(pointA);
+//                
+//                
+//                if( geoDistance < 1000){
+//                    
+//                    gl::color( finalColor );
+//                    gl::vertex(pointA);
+//                    
+//                }
                 
-                auto latB = vectorLerp(positions, normalizedIndex - 1);
-                auto pointB = csys::geo::latLongToCartesian( size , latB);
-                
-                auto geoDistance = csys::geo::distanceLatLong(latA, latB);
-                auto pixelDistance = glm::distance(pointA, pointB);
-                
-//                float colorFactor =  constrain(pixelDistance / mSettings.maxSpeed, 0.0f, 1.0f);
-                //ColorA(1.0f, 0.3f, 0.3f, 1.0f);/
-                ColorA finalColor = plane->getInitialColor(); //..lerp(mSettings.trailColorA, mSettings.trailColorB, colorFactor);
-                
-//                finalColor.a = 0.6f;
                 
                 
-//                gl::color( finalColor );
-//                gl::vertex(pointA);
-                
-                
-                if( geoDistance < 1000){
-                    
-                    gl::color( finalColor );
-                    gl::vertex(pointA);
-                    
-                }
+
                 
             }
             
         }
         
         gl::end();
-
+        
+//        gl::color( Color::white());
+//        
+//        if (  sortedPlanes.size() > 0 ){
+//            auto p = sortedPlanes[32930];
+//            
+//            for( auto& fp : p->getFilteredPositions() ){
+//                
+//                gl::drawSolidCircle(fp, 5);
+//                
+//            }
+//        }
 
    
     }
@@ -451,6 +491,7 @@ namespace csys {
         
         planes->bind(0);
         gl::drawSolidRect(Rectf(0,0,size.x, size.y), mSettings.ULCoord, mSettings.LRCoord  );
+    
         planes->unbind();
         
         gl::color(1.0f, 0.0f, 0.0f, 1.0f);
@@ -492,7 +533,9 @@ namespace csys {
             mComposeShader->uniform("uTexPlanes", 1);
             mComposeShader->uniform("uTexTerminator", 2);
 
-            mComposeShader->uniform("uTime", float(PlaneManager::instance().getPercentageTime()));
+//            mComposeShader->uniform("uTime", float(PlaneManager::instance().getPercentageTime()));
+            
+            mComposeShader->uniform("uTime", float(mSettings.maxSpeed * app::getElapsedSeconds()) );
             
             mComposeShader->uniform("offset", mSettings.terminatorOffset);
             
@@ -505,7 +548,7 @@ namespace csys {
             mComposeShader->uniform("uPlanesNightColor", mSettings.planesNightTint);
 
             
-            gl::drawSolidRect(Rectf(0,0,size.x, size.y), vec2( 0, 1 ), vec2(1.f, 0.0f)  );
+            gl::drawSolidRect(Rectf(0,0,size.x, size.y));
         
             
             mMapTexture->unbind();

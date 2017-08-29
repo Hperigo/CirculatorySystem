@@ -95,6 +95,14 @@ namespace csys {
         std::vector<ci::vec2> getPositions() const{
             return positions;
         }
+
+        std::vector<ci::vec2> getFilteredPositions() const{
+            return filteredPositions;
+        }
+        
+        void setFilteredPositions(const std::vector<ci::vec2>& positons_ ){
+            filteredPositions = positons_;
+        }
         
         void setActive(bool a){
             active = a;
@@ -122,6 +130,7 @@ namespace csys {
         
         std::string mKey;
         std::vector<ci::vec2> positions;
+        std::vector<ci::vec2> filteredPositions;
         
         friend class csys::PlaneManager;
 

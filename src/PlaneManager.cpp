@@ -12,6 +12,7 @@
 #include "GeoUtils.h"
 
 #include "cinder/Log.h"
+#include "cinder/Path2D.h"
 #include "CinderImGui.h"
 
 #include "CinderCereal.h"
@@ -104,7 +105,15 @@ namespace csys {
             mPlanesMap.clear();
             mSortedPlanes.clear();
             
+            
             for(auto plane : planes) {
+                
+                plane->setFilteredPositions( filterPlanePositions( plane ) );
+                
+                if( plane->getFilteredPositions().size() == 0 ){
+                    continue;
+                }
+                
                 mPlanesMap[plane->getKey()] = plane;
             }
             
@@ -118,10 +127,11 @@ namespace csys {
                 return a->getCreationTime() < b->getCreationTime();
                 
             };
-            
-            CI_LOG_I("Sorted planes");
-            
+        
             std::sort(mSortedPlanes.begin(), mSortedPlanes.end(), cmp);
+        
+
+            
             
             mInitialTime = calculateInitialTime();
             mEndTime     = calculateEndTime();
@@ -131,8 +141,134 @@ namespace csys {
             
         });
         
-        mSettings.load();
+        //mSettings.load();
         mTimer.start();
+    }
+    
+    
+    float PlaneManager::findIntersection(const ci::vec2& pointA,const ci::vec2& pointB, const float width ){
+        
+        
+        ci::vec2 target = pointB - pointA;
+        float r = glm::atan(target.y, target.x);
+        
+        float h =  width * glm::tan(r);
+        
+        return h;
+    }
+
+    
+    
+    std::vector<ci::vec2> PlaneManager::filterPlanePositions(const PlaneRef& plane ){
+        
+        ci::vec2 mapSize{ 2160, 1080 };
+
+        
+        
+        std::vector<ci::Path2d> paths;
+        
+        auto positions = plane->getPositions();
+        
+        paths.push_back(ci::Path2d());
+        paths.back().moveTo( csys::geo::latLongToCartesian(mapSize, positions[0])  );
+        
+        
+        bool found = false;
+        bool leftToRight = false;
+        
+        
+        ci::vec2 edgePointA;
+        ci::vec2 edgePointB;
+        
+        for( int i = 0; i < positions.size(); ++i){
+            
+            
+            ci::vec2 p = positions[i];
+            ci::vec2 screen_pos = csys::geo::latLongToCartesian(mapSize, p);
+            
+
+            if( (i + 1) < (positions.size()) ){
+                
+                ci::vec2 pNext = positions[i + 1];
+                ci::vec2 screenNext = csys::geo::latLongToCartesian(mapSize, pNext);
+                
+                
+                if( glm::distance(screen_pos, screenNext) > mapSize.x - 500 ){
+                    
+                    edgePointA = screen_pos;
+                    edgePointB = screenNext;
+                    found = true;
+                    
+                    float intersection = screen_pos.y + (screenNext.y - screen_pos.y ) / 2.0f;
+                    
+                    if( screen_pos.x > screenNext.x ){ // means right to left
+                        
+                        ci::vec2 a = screen_pos;
+                        ci::vec2 b =  ci::vec2(mapSize.x + screenNext.x, screenNext.y);
+                        
+                        intersection =  findIntersection(a, b, mapSize.x - a.x);
+                        
+                        paths.back().lineTo( screen_pos );
+                        paths.back().lineTo( ci::vec2( mapSize.x,  screen_pos.y + intersection ) );
+                        
+                        paths.push_back(ci::Path2d());
+                        
+                        
+                        
+                        paths.back().moveTo( ci::vec2(0,   screen_pos.y + intersection ) );
+                        paths.back().lineTo( screenNext );
+                        continue;
+                        
+                    }else{
+                        
+                        leftToRight = true;
+                        
+                        float w = mapSize.x - screenNext.x;
+                        
+                        ci::vec2 a(-w, screenNext.y);
+                        ci::vec2 b = screen_pos;
+                        
+                        intersection =  findIntersection(a, b, -w);
+                        
+                        paths.back().lineTo( screen_pos );
+                        paths.back().lineTo( ci::vec2(0,  screenNext.y - intersection ) );
+                        
+                        paths.push_back(ci::Path2d());
+                        paths.back().moveTo( ci::vec2( mapSize.x, screenNext.y - intersection ) );
+                        paths.back().lineTo( screenNext );
+                        continue;
+                        
+                    }
+                    
+                }
+                
+            }
+            
+            paths.back().lineTo( screen_pos );
+            
+        }
+        
+        std::vector<ci::vec2> pppoints;
+        
+        
+        
+        for(auto shape : paths){
+            
+            float totalLength = 0;
+            
+            totalLength = shape.calcLength();
+            
+            
+            for( int i = 0; i < totalLength; i+= 2){
+                
+                float v = shape.calcTimeForDistance(i + 0.001);
+                ci::vec2 p = shape.getPosition(v);
+                pppoints.push_back( p );
+                
+            }
+        }
+        
+        return pppoints;
     }
     
     
@@ -196,6 +332,7 @@ namespace csys {
             if(plane->isActive() == false){
                
                 
+//                auto pos =  geo::latLongToCartesian(mColorMap.getSize(), plane->getPositions()[0] );
                 auto pos =  geo::latLongToCartesian(mColorMap.getSize(), plane->getPositions()[0] );
                 
                 ci::ColorA col =  mColorMap.getPixel( pos );

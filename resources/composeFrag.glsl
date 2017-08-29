@@ -21,6 +21,7 @@ in vec2	TexCoord;
 void main( void )
 {
 
+	//vec2 texCood = TexCoord.st 	+ vec2(-uTime, 0.0);
 	vec2 texCood = TexCoord.st 	+ vec2(-uTime, 0.0);
 
 	vec4 tMap           =  texture( uTexMap, texCood );

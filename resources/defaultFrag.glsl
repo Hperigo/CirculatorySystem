@@ -15,8 +15,8 @@ in vec2	TexCoord;
 void main( void )
 {
 
-	vec4 tMap           = texture( uTexMap, TexCoord.st 	+ vec2(uTime, 0.0) );
-	vec4 tPlanes 		= texture( uTexPlanes, TexCoord.st  + vec2(uTime, 0.0));
+	vec4 tMap           = texture( uTexMap, TexCoord.st 	+ vec2(0.5, 0.0) );
+	vec4 tPlanes 		= texture( uTexPlanes, TexCoord.st  + vec2(0.5, 0.0));
 
 	vec4 compose =  mix(tMap * uMapColor, tPlanes, tPlanes.a);
 

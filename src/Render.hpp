@@ -38,14 +38,14 @@ namespace csys {
             
             //Plane Fbo
             bool doClear = false;
-            float maxSpeed = 10;
+            float maxSpeed = 0.01;
             float mapScale = 1.0f;
             float fadeAlpha = 0.1f;
             
             float pointSize = 1.0f;
             
-            ci::vec2 LRCoord = {0.993f, 0.0f};
-            ci::vec2 ULCoord = {0.003f, 1.0f};
+            ci::vec2 LRCoord = {0.9998, 0.0f};
+            ci::vec2 ULCoord = {0.0003f, 1.0f};
             
             
             ci::ColorA trailColorA {  1.0f, 1.0f, 1.0f, 0.9f };

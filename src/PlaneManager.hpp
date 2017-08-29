@@ -72,10 +72,11 @@ namespace csys {
         std::map<std::string , csys::PlaneRef>& getPlanes() { return mPlanesMap; }
         std::vector<csys::PlaneRef>& getSortedPlanes() { return mSortedPlanes; }
         
-        
-        
-        
     private:
+        
+        
+        std::vector<ci::vec2> filterPlanePositions(const csys::PlaneRef& plane );
+        float findIntersection(const ci::vec2& pointA,const ci::vec2& pointB, const float width );
         
         double mTimePercentage = 0.0f;
         

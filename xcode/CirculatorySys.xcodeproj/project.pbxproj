@@ -34,6 +34,8 @@
 		BE45F8AC1E97F112008842D6 /* imgui_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE45F8A71E97F112008842D6 /* imgui_draw.cpp */; };
 		BE45F8AD1E97F112008842D6 /* imgui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE45F8A91E97F112008842D6 /* imgui.cpp */; };
 		BE45F8B01E97F125008842D6 /* CinderImGui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE45F8AF1E97F125008842D6 /* CinderImGui.cpp */; };
+		BE6552441F53CA2D00884CD9 /* map.png in Resources */ = {isa = PBXBuildFile; fileRef = BE6552431F53CA2D00884CD9 /* map.png */; };
+		BE6552491F54AC0900884CD9 /* map cortado.png in Resources */ = {isa = PBXBuildFile; fileRef = BE6552481F54AC0900884CD9 /* map cortado.png */; };
 		BE795C211E74A25F00B4E69C /* Plane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE795C1F1E74A25F00B4E69C /* Plane.cpp */; };
 		BE795C241E74A27700B4E69C /* FAClient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BE795C221E74A27700B4E69C /* FAClient.cpp */; };
 		BE91F9D21F046FEA0023B9F6 /* color_map.png in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9D11F046FEA0023B9F6 /* color_map.png */; };
@@ -51,7 +53,6 @@
 		BE91F9F01F04702B0023B9F6 /* map_color.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9DE1F04702B0023B9F6 /* map_color.jpg */; };
 		BE91F9F11F04702B0023B9F6 /* map_lat_long_2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9DF1F04702B0023B9F6 /* map_lat_long_2.jpg */; };
 		BE91F9F21F04702B0023B9F6 /* map_lat_long.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9E01F04702B0023B9F6 /* map_lat_long.jpg */; };
-		BE91F9F41F04702B0023B9F6 /* map.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9E21F04702B0023B9F6 /* map.jpg */; };
 		BE91F9F51F04702B0023B9F6 /* out_main.json in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9E31F04702B0023B9F6 /* out_main.json */; };
 		BE91F9F61F04702B0023B9F6 /* out.json in Resources */ = {isa = PBXBuildFile; fileRef = BE91F9E41F04702B0023B9F6 /* out.json */; };
 		BEBB8F541E992FC8003FFB3D /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = BCFB511C779C4995B173214E /* CinderApp.icns */; };
@@ -99,6 +100,7 @@
 		AE3A496957CB44B3B47E6A54 /* Server.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Server.h; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-Syphon/src/Server.h"; sourceTree = "<group>"; };
 		BA825C2658E54DEA9EEC8A35 /* CirculatorySys_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = "\"\""; path = CirculatorySys_Prefix.pch; sourceTree = "<group>"; };
 		BCFB511C779C4995B173214E /* CinderApp.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = CinderApp.icns; path = ../resources/CinderApp.icns; sourceTree = "<group>"; };
+		BE22FFFB1F4FA263000D5DFF /* map.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = map.png; path = build/Debug/CirculatorySys.app/Contents/Resources/map.png; sourceTree = "<group>"; };
 		BE2E0EA71E78918C00F8A479 /* Database.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cpp; path = ../src/Database.cpp; sourceTree = "<group>"; };
 		BE2E0EA81E78918C00F8A479 /* Database.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Database.hpp; path = ../src/Database.hpp; sourceTree = "<group>"; };
 		BE3059671E9D5F2B00FD0D8D /* Render.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Render.cpp; path = ../src/Render.cpp; sourceTree = "<group>"; };
@@ -116,6 +118,8 @@
 		BE45F8AA1E97F112008842D6 /* imgui.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = imgui.h; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-ImGui/lib/imgui/imgui.h"; sourceTree = "<group>"; };
 		BE45F8AF1E97F125008842D6 /* CinderImGui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CinderImGui.cpp; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-ImGui/src/CinderImGui.cpp"; sourceTree = "<group>"; };
 		BE45F8B31E983AFA008842D6 /* CinderCereal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CinderCereal.h; path = "../../../../../Dev/cpp/Cinder/blocks/Cinder-Cereal/include/CinderCereal.h"; sourceTree = "<group>"; };
+		BE6552431F53CA2D00884CD9 /* map.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = map.png; path = ../resources/map.png; sourceTree = "<group>"; };
+		BE6552481F54AC0900884CD9 /* map cortado.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "map cortado.png"; path = "../resources/map cortado.png"; sourceTree = "<group>"; };
 		BE795C1F1E74A25F00B4E69C /* Plane.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Plane.cpp; path = ../src/Plane.cpp; sourceTree = "<group>"; };
 		BE795C201E74A25F00B4E69C /* Plane.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Plane.hpp; path = ../src/Plane.hpp; sourceTree = "<group>"; };
 		BE795C221E74A27700B4E69C /* FAClient.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FAClient.cpp; path = ../src/FAClient.cpp; sourceTree = "<group>"; };
@@ -135,7 +139,6 @@
 		BE91F9DE1F04702B0023B9F6 /* map_color.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = map_color.jpg; path = ../resources/map_color.jpg; sourceTree = "<group>"; };
 		BE91F9DF1F04702B0023B9F6 /* map_lat_long_2.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = map_lat_long_2.jpg; path = ../resources/map_lat_long_2.jpg; sourceTree = "<group>"; };
 		BE91F9E01F04702B0023B9F6 /* map_lat_long.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = map_lat_long.jpg; path = ../resources/map_lat_long.jpg; sourceTree = "<group>"; };
-		BE91F9E21F04702B0023B9F6 /* map.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = map.jpg; path = ../resources/map.jpg; sourceTree = "<group>"; };
 		BE91F9E31F04702B0023B9F6 /* out_main.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = out_main.json; path = ../resources/out_main.json; sourceTree = "<group>"; };
 		BE91F9E41F04702B0023B9F6 /* out.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = out.json; path = ../resources/out.json; sourceTree = "<group>"; };
 		BEC8F4FC1E81EB1D00A3B92E /* GeoUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeoUtils.h; path = ../src/GeoUtils.h; sourceTree = "<group>"; };
@@ -271,6 +274,8 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				BE6552481F54AC0900884CD9 /* map cortado.png */,
+				BE6552431F53CA2D00884CD9 /* map.png */,
 				BE91F9D31F04702B0023B9F6 /* blurFrag.glsl */,
 				BE91F9D41F04702B0023B9F6 /* blurVertex.glsl */,
 				BE91F9D51F04702B0023B9F6 /* color_map_1.png */,
@@ -284,8 +289,8 @@
 				BE91F9DD1F04702B0023B9F6 /* initcommand.cskey */,
 				BE91F9DE1F04702B0023B9F6 /* map_color.jpg */,
 				BE91F9DF1F04702B0023B9F6 /* map_lat_long_2.jpg */,
+				BE22FFFB1F4FA263000D5DFF /* map.png */,
 				BE91F9E01F04702B0023B9F6 /* map_lat_long.jpg */,
-				BE91F9E21F04702B0023B9F6 /* map.jpg */,
 				BE91F9E31F04702B0023B9F6 /* out_main.json */,
 				BE91F9E41F04702B0023B9F6 /* out.json */,
 				BE91F9D11F046FEA0023B9F6 /* color_map.png */,
@@ -455,12 +460,13 @@
 				BE91F9EF1F04702B0023B9F6 /* initcommand.cskey in Resources */,
 				BE91F9E51F04702B0023B9F6 /* blurFrag.glsl in Resources */,
 				BE91F9D21F046FEA0023B9F6 /* color_map.png in Resources */,
+				BE6552491F54AC0900884CD9 /* map cortado.png in Resources */,
 				BE91F9F61F04702B0023B9F6 /* out.json in Resources */,
+				BE6552441F53CA2D00884CD9 /* map.png in Resources */,
 				BE91F9ED1F04702B0023B9F6 /* defaultVertex.glsl in Resources */,
 				BE91F9E81F04702B0023B9F6 /* color_map_3.png in Resources */,
 				BE91F9E61F04702B0023B9F6 /* blurVertex.glsl in Resources */,
 				BEBB8F541E992FC8003FFB3D /* CinderApp.icns in Resources */,
-				BE91F9F41F04702B0023B9F6 /* map.jpg in Resources */,
 				BE91F9F01F04702B0023B9F6 /* map_color.jpg in Resources */,
 				BE91F9F21F04702B0023B9F6 /* map_lat_long.jpg in Resources */,
 				BE91F9EA1F04702B0023B9F6 /* composeFrag.glsl in Resources */,

@@ -110,13 +110,24 @@ class CirculatorySysApp : public App {
             
             ui::Checkbox("Draw sphere", &drawSphere);
             
+            ui::Checkbox("Low resolution output", &useLowRes);
+            if( useLowRes ){
+                
+                syphonOutputSize = vec2 { 1600, 800 };
+                
+            }else{
+                syphonOutputSize = vec2 { 2160, 1080 };
+            }
+            
+            
+            ui::Dummy({ 0, 10 });
+            
             ui::Checkbox("Start Fullscreen", &startFullScreen);
             if(ui::Button("Set Fullscreen")){
                 app = (CirculatorySysApp*) app::App::get();
-//                app->setFullScreen( !app->isFullScreen() );
                 app->manageFullScreen(!app->isFullScreen() );
-                
             }
+            
             
             if(ui::Button("Save")){
                 save();
@@ -129,15 +140,20 @@ class CirculatorySysApp : public App {
             ui::Spacing();
             ui::Spacing();
             
+            
+//            ui::DragFloat("top", &topCrop, 0.00001f, 0.0f, 1.0f, "%.5f");
+//            ui::DragFloat("bottom", &bottomCrop, 0.00001f, 0.0f, 1.0f, "%.5f");
+            
+            ui::DragFloat("crop offset", &cropOffset, 1, -1000.0f, 1000.0f);
+
+            ui::Spacing();
+            ui::Spacing();
+            
             if(ui::Button("QUIT")){
-                app = (CirculatorySysApp*) app::App::get();
                 
+                app = (CirculatorySysApp*) app::App::get();
                 app->quit();
             }
-            
-            
-
-            
         }
         
         void save() override{
@@ -151,7 +167,7 @@ class CirculatorySysApp : public App {
                 
                 CI_LOG_I("Saving..." << startFullScreen);
                 
-                archive( drawSphere, startFullScreen );
+                archive( drawSphere, startFullScreen, useLowRes, cropOffset );
                 
             }catch(std::exception &e){
                 
@@ -169,7 +185,7 @@ class CirculatorySysApp : public App {
                 cereal::JSONInputArchive archive(inFile);
                 
                 
-                archive(drawSphere, startFullScreen);
+                archive(drawSphere, startFullScreen, useLowRes, cropOffset);
                 
                 CI_LOG_I("loading..." << startFullScreen);
                 
@@ -183,10 +199,16 @@ class CirculatorySysApp : public App {
         bool drawSphere = false;
         bool startFullScreen = false;
         
+        bool useLowRes = false;
+        vec2 syphonOutputSize{ 2160, 1080 };
+        
+        float topCrop = 0.0f;
+        float bottomCrop = 1.0f;
+        float cropOffset = 200;
+        
+        
         CirculatorySysApp* app;
-        
-        
-        
+
     };
     
     
@@ -235,7 +257,10 @@ void CirculatorySysApp::setup()
     getWindow()->setSize(mSettings->windowSize);
     
     
-    mRender.setup( {1280, 640} );
+//    mRender.setup(  {2160,1080} );
+//    mRender.setup( mMainSettings.syphonOutputSize );
+    
+    mRender.setup(  { 2160, 1080 } );
     
     mSyphonServer.setName("Csys");
     
@@ -414,17 +439,19 @@ void CirculatorySysApp::draw()
     }else{
         
         
-        vec2 syphonSize = { 2160,1080 };
+        vec2 syphonSize = mMainSettings.syphonOutputSize;
         
         {
          
             gl::ScopedViewport v( vec2(0), syphonSize );
             gl::setMatricesWindow(syphonSize.x, syphonSize.y);
             
-            //        mSyphonServer.bind( {1280, 640} );
             
-            mSyphonServer.bind( syphonSize );
-            gl::draw( tex, Rectf(0,0, syphonSize.x, syphonSize.y) );
+            mSyphonServer.bind( { 2160, 800 } );
+//            gl::draw( tex, ci::Area(0, syphonSize.y * mMainSettings.topCrop, syphonSize.x, syphonSize.y * mMainSettings.bottomCrop), Rectf(0, syphonSize.y * mMainSettings.topCrop, syphonSize.x, syphonSize.y * mMainSettings.bottomCrop) );
+            
+             gl::draw( tex, ci::Area(0, 0, syphonSize.x, syphonSize.y), Rectf(0, mMainSettings.cropOffset, syphonSize.x, syphonSize.y + mMainSettings.cropOffset) );
+            
             mSyphonServer.unbind();
         }
     
@@ -432,7 +459,7 @@ void CirculatorySysApp::draw()
             gl::ScopedViewport v( vec2(0), getWindowSize() );
 
             gl::setMatricesWindow(getWindowWidth(), getWindowHeight());
-            gl::draw( tex, Rectf(0,0, syphonSize.x, syphonSize.y) );
+            gl::draw( tex, ci::Area(0, syphonSize.y * mMainSettings.topCrop, syphonSize.x, syphonSize.y * mMainSettings.bottomCrop), Rectf(0,0, syphonSize.x, syphonSize.y) );
         }
 
         
